@@ -23,6 +23,63 @@
 
 Claude Max plan has session (5-hour) and weekly (7-day) usage limits, but there's no easy way to check how much you've consumed without opening the CLI and running `/usage`. ClaudeUsage sits quietly in your menu bar and shows the percentage at a glance — plus pace predictions, reset countdowns, and cost tracking.
 
+## ClaudeUsage vs CodexBar
+
+> **TL;DR** — ClaudeUsage reads usage data directly from the official Claude CLI. No Keychain access, no reverse-engineered API calls, no token math that silently goes wrong. 772 KB, zero dependencies, just works.
+
+### Security & Compliance
+
+| | ClaudeUsage | CodexBar |
+|---|---|---|
+| **How it gets data** | Spawns official `claude` CLI via PTY, reads `/usage` output | Reads macOS Keychain for OAuth tokens, makes direct HTTP requests to `api.anthropic.com`; falls back to browser cookies |
+| **ToS compliance** | Uses the CLI exactly as intended — same as you typing `/usage` | Extracting credentials from Keychain and calling undocumented OAuth endpoints may violate [Anthropic Usage Policy](https://www.anthropic.com/policies) |
+| **Keychain access** | Never touches Keychain | Reads `Claude Code-credentials` from Keychain; Chrome cookie decryption also requires Keychain |
+| **Network requests** | Zero — all data from local CLI process | Sends HTTP requests to Anthropic API, reads browser cookies from Safari/Chrome/Firefox |
+| **Permissions needed** | None | Optional Full Disk Access (Safari cookies) + Keychain access prompts |
+
+### Accuracy
+
+| | ClaudeUsage | CodexBar |
+|---|---|---|
+| **Usage % source** | Official CLI `/usage` output — Anthropic's authoritative data | Self-calculated from JSONL token logs (estimates) |
+| **New model support** | Automatic — CLI already knows every model | Requires manual pricing table update; **missing `claude-sonnet-4-6`** caused [$101/day to vanish](https://github.com/steipete/CodexBar) |
+| **Message dedup** | Global `message.id` dedup across all files | Per-file dedup only — same message in multiple project dirs counted 2×+ |
+| **Accuracy risk** | None for usage % — identical to what Anthropic shows you | JSONL logs average **1.7 duplicate entries per message** (up to 5×); incorrect dedup → 2–4× cost inflation |
+| **Known data bugs** | — | Credits off by [orders of magnitude](https://github.com/steipete/CodexBar/issues/321); stats [inconsistent with CLI](https://github.com/steipete/CodexBar/issues/341) |
+
+### Size & Simplicity
+
+| | ClaudeUsage | CodexBar |
+|---|---|---|
+| **App size** | **772 KB** | ~50 MB (65× larger) |
+| **Codebase** | ~10 Swift files | 453 Swift files across 576 total files |
+| **Dependencies** | Zero | Sparkle, SweetCookieKit, swift-syntax, Commander, swift-log, KeyboardShortcuts |
+| **Min macOS** | macOS 13 (Ventura) | macOS 14 (Sonoma) |
+| **Stability** | v1.0 stable release | Beta (v0.18.0-beta.3); [Keychain prompt storms](https://github.com/steipete/CodexBar/issues), [startup failures on Tahoe](https://github.com/steipete/CodexBar/issues/363) |
+| **Build** | `bash build.sh` — no Xcode needed | Full SPM + macros + multiple build targets |
+
+### Feature Coverage
+
+| Feature | ClaudeUsage | CodexBar |
+|---|---|---|
+| Session + Weekly usage % | ✅ | ✅ |
+| Reset countdown | ✅ | ✅ |
+| Pace prediction & run-out estimate | ✅ | ❌ |
+| Cost tracking (local JSONL) | ✅ | ✅ |
+| Smart idle detection (IOKit) | ✅ | ❌ |
+| Multi-provider (OpenAI, Cursor, Gemini…) | ❌ Claude only | ✅ 20 providers |
+| Cost history chart | ❌ | ✅ |
+| Desktop widget (WidgetKit) | ❌ | ✅ |
+| CLI tool | ❌ | ✅ |
+| Linux support | ❌ | ✅ (CLI only) |
+| Launch at login | ✅ | ✅ |
+
+### Bottom Line
+
+**Choose ClaudeUsage if** you use Claude Code and want a lightweight, accurate, privacy-respecting monitor that reads official data and never touches your credentials. 772 KB, zero config, zero risk.
+
+**Choose CodexBar if** you need a unified dashboard for 20+ AI providers and don't mind the larger footprint, beta stability, Keychain access prompts, and the compliance implications of direct API credential extraction.
+
 ## Features
 
 ### Usage Monitoring
