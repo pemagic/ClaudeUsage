@@ -66,8 +66,9 @@ actor UsageFetcher {
         process.standardOutput = secondaryHandle
         process.standardError  = secondaryHandle
 
-        let probeDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("ClaudeUsage/probe")
+        // Use /tmp so claude doesn't walk up the directory tree looking for .claude projects,
+        // which would trigger macOS TCC permission dialogs for Desktop/network volumes.
+        let probeDir = URL(fileURLWithPath: "/tmp/claudeusage-probe")
         try? FileManager.default.createDirectory(at: probeDir, withIntermediateDirectories: true)
         process.currentDirectoryURL = probeDir
 
