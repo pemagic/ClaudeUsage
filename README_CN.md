@@ -23,62 +23,23 @@
 
 Claude Max 计划有会话（5小时）和周（7天）用量限制，但没有方便的方式查看消耗了多少——你得打开 CLI 手动运行 `/usage`。ClaudeUsage 安静地待在菜单栏，一眼就能看到百分比，还有消耗速度预测、重置倒计时和费用追踪。
 
-## ClaudeUsage vs CodexBar
+## 致敬 CodexBar
 
-> **一句话总结** — ClaudeUsage 直接读取官方 CLI 的用量数据。不碰钥匙串，不逆向 API，不靠可能悄悄出错的 token 计算。772 KB，零依赖，开箱即用。
-
-### 安全与合规
+本项目受 [CodexBar](https://github.com/steipete/CodexBar) 启发——Peter Steinberger 开发的多 Provider AI 用量仪表盘。感谢 CodexBar 在这一领域的开创性工作。ClaudeUsage 采用不同的思路，专为 Claude Code 用户做了轻量化和安全性优化。
 
 | | ClaudeUsage | CodexBar |
 |---|---|---|
-| **数据获取方式** | 通过 PTY 启动官方 `claude` CLI，读取 `/usage` 输出 | 从 macOS 钥匙串读取 OAuth token，直接向 `api.anthropic.com` 发送 HTTP 请求；还可回退到浏览器 cookie |
-| **合规性** | 使用官方 CLI，和你手动输入 `/usage` 完全一致 | 从钥匙串提取凭证并调用未公开的 OAuth 端点，可能违反 [Anthropic 使用政策](https://www.anthropic.com/policies) |
-| **钥匙串访问** | 从不接触钥匙串 | 读取 `Claude Code-credentials`；Chrome cookie 解密也需要钥匙串 |
-| **网络请求** | 零 — 所有数据来自本地 CLI 进程 | 向 Anthropic API 发送 HTTP 请求，读取 Safari/Chrome/Firefox 浏览器 cookie |
-| **所需权限** | 无 | 可选完全磁盘访问权限（Safari cookie）+ 钥匙串访问弹窗 |
-
-### 精确性
-
-| | ClaudeUsage | CodexBar |
-|---|---|---|
-| **用量百分比来源** | 官方 CLI `/usage` 输出 — Anthropic 权威数据 | 从 JSONL token 日志自行计算（估算值） |
-| **新模型支持** | 自动 — CLI 本身已包含所有模型 | 需手动更新定价表；**缺失 `claude-sonnet-4-6`** 导致[每天 $101 凭空消失](https://github.com/steipete/CodexBar) |
-| **消息去重** | 全局 `message.id` 去重，跨所有文件 | 仅文件内去重 — 同一消息跨项目目录重复计算 2 次以上 |
-| **准确性风险** | 用量百分比零风险 — 和 Anthropic 显示的完全一致 | JSONL 日志平均 **每条消息 1.7 条重复记录**（最高 5 条）；去重不当 → 费用虚高 2–4 倍 |
-| **已知数据 Bug** | — | Credits 差了[好几个数量级](https://github.com/steipete/CodexBar/issues/321)；统计数据[与 CLI 不一致](https://github.com/steipete/CodexBar/issues/341) |
-
-### 体积与简洁性
-
-| | ClaudeUsage | CodexBar |
-|---|---|---|
-| **应用体积** | **< 1 MB** | ~50 MB（大 50 倍以上） |
-| **代码规模** | ~10 个 Swift 文件 | 453 个 Swift 文件，共 576 个文件 |
-| **依赖项** | 零 | Sparkle, SweetCookieKit, swift-syntax, Commander, swift-log, KeyboardShortcuts |
+| **数据来源** | 官方 CLI `/usage` — Anthropic 原始数据 | OAuth API / CLI PTY / 浏览器 cookie |
+| **安全性** | 零网络请求，不碰钥匙串和凭证 | 钥匙串 + API 认证 |
+| **体积** | < 1 MB，零依赖 | ~50 MB，多个框架 |
 | **最低系统** | macOS 13 (Ventura) | macOS 14 (Sonoma) |
-| **稳定性** | v1.0 正式版 | Beta (v0.18.0-beta.3)；[钥匙串弹窗风暴](https://github.com/steipete/CodexBar/issues)、[Tahoe 启动失败](https://github.com/steipete/CodexBar/issues/363) |
-| **构建** | `bash build.sh` — 无需 Xcode | 完整 SPM + 宏 + 多构建目标 |
+| **覆盖范围** | Claude Code（专注） | 20+ AI 服务 |
+| **消耗速度预测** | ✅ | — |
+| **空闲检测** | ✅ IOKit | — |
+| **桌面小组件** | ✅ 毛玻璃悬浮窗 | ✅ WidgetKit |
+| **费用图表 / CLI / Linux** | — | ✅ |
 
-### 功能对比
-
-| 功能 | ClaudeUsage | CodexBar |
-|------|---|---|
-| 会话 + 周用量百分比 | ✅ | ✅ |
-| 重置倒计时 | ✅ | ✅ |
-| 消耗速度预测 & 耗尽预估 | ✅ | ❌ |
-| 费用追踪（本地 JSONL） | ✅ | ✅ |
-| 智能空闲检测（IOKit） | ✅ | ❌ |
-| 多 Provider（OpenAI、Cursor、Gemini…） | ❌ 仅 Claude | ✅ 20 个 Provider |
-| 费用历史图表 | ❌ | ✅ |
-| 桌面小组件 | ✅ 悬浮窗（毛玻璃） | ✅ WidgetKit |
-| CLI 工具 | ❌ | ✅ |
-| Linux 支持 | ❌ | ✅（仅 CLI） |
-| 登录时启动 | ✅ | ✅ |
-
-### 总结
-
-**选 ClaudeUsage** — 如果你用 Claude Code，想要一个轻量、精确、尊重隐私的监控工具，读取官方数据，从不碰你的凭证。不到 1 MB，零配置，零风险。
-
-**选 CodexBar** — 如果你需要一个支持 20+ AI 服务的统一仪表盘，且不介意更大的体积、Beta 阶段的稳定性、钥匙串访问弹窗，以及直接提取 API 凭证带来的合规风险。
+**选 ClaudeUsage** — 轻量专注的 Claude 监控。**选 CodexBar** — 多 Provider 综合仪表盘。
 
 ## 功能特性
 
