@@ -55,6 +55,8 @@ final class UsageStore: ObservableObject {
     private var idlePollTimer: Timer?
     /// One-shot timer that fires when a usage window resets, triggering an immediate refresh
     private var resetTimer: Timer?
+    /// Timestamp when Claude process was first observed as not running (nil = currently running)
+    private var claudeGoneSince: Date?
 
     init(settings: Settings) {
         self.settings = settings
@@ -160,6 +162,7 @@ final class UsageStore: ObservableObject {
             // Idle detection disabled
             if isIdle {
                 isIdle = false
+                claudeGoneSince = nil
             }
             return
         }
@@ -168,13 +171,27 @@ final class UsageStore: ObservableObject {
         let idle = systemIdleSeconds()
         let claudeRunning = isClaudeRunning()
 
-        if (!claudeRunning || idle >= thresholdSecs) && !isIdle {
-            // Transition: active → idle (user idle OR claude not running)
+        // Track how long Claude has been gone
+        if claudeRunning {
+            claudeGoneSince = nil
+        } else if claudeGoneSince == nil {
+            claudeGoneSince = Date()
+        }
+
+        // Claude not running counts as idle only after threshold elapsed
+        let claudeGoneTooLong: Bool
+        if let since = claudeGoneSince {
+            claudeGoneTooLong = Date().timeIntervalSince(since) >= thresholdSecs
+        } else {
+            claudeGoneTooLong = false
+        }
+
+        let shouldBeIdle = claudeGoneTooLong || idle >= thresholdSecs
+
+        if shouldBeIdle && !isIdle {
             isIdle = true
-        } else if claudeRunning && idle < thresholdSecs && isIdle {
-            // Transition: idle → active (user returned AND claude is running)
+        } else if !shouldBeIdle && isIdle {
             isIdle = false
-            // Immediate refresh on return
             Task { await refresh() }
         }
     }
