@@ -29,6 +29,7 @@ private func systemIdleSeconds() -> TimeInterval {
 @MainActor
 final class UsageStore: ObservableObject {
     @Published var snapshot: UsageSnapshot?
+    @Published var costData: CostData?
     @Published var isLoading = false
     @Published var lastError: String?
     @Published var isIdle = false
@@ -36,19 +37,21 @@ final class UsageStore: ObservableObject {
     let settings: Settings
     private let fetcher = UsageFetcher()
 
-    // Two timers: one for normal refresh, one for idle polling
     private var refreshTimer: Timer?
-    private var idleWatchTimer: Timer?
+    /// Lightweight timer that polls idle state every 15s — independent of refresh timer
+    private var idlePollTimer: Timer?
 
     init(settings: Settings) {
         self.settings = settings
         scheduleRefreshTimer()
+        startIdlePollTimer()
         Task { await refresh() }
     }
 
     // MARK: - Menu bar label
 
     var menuBarLabel: String {
+        if isIdle { return "⏸" }
         guard let snap = snapshot, let value = snap.fiveHourAll else {
             return isLoading ? "…" : "—"
         }
@@ -62,12 +65,24 @@ final class UsageStore: ObservableObject {
         guard !isLoading else { return }
         isLoading = true
         lastError = nil
-        do {
-            let raw = try await fetcher.fetch()
-            snapshot = UsageParser.parse(raw)
-        } catch {
-            lastError = error.localizedDescription
-        }
+
+        // Run heavy I/O off the main thread to keep UI responsive
+        let result: (UsageSnapshot?, CostData?, String?) = await Task.detached {
+            var snap: UsageSnapshot?
+            var err: String?
+            do {
+                let raw = try await self.fetcher.fetch()
+                snap = UsageParser.parse(raw)
+            } catch {
+                err = error.localizedDescription
+            }
+            let cost = CostScanner.scan()
+            return (snap, cost, err)
+        }.value
+
+        snapshot = result.0 ?? snapshot
+        costData = result.1
+        lastError = result.2
         isLoading = false
     }
 
@@ -75,59 +90,51 @@ final class UsageStore: ObservableObject {
 
     func scheduleRefreshTimer() {
         refreshTimer?.invalidate()
-        idleWatchTimer?.invalidate()
-        idleWatchTimer = nil   // ensure clean state
-        isIdle = false         // always reset idle flag when rescheduling
 
         let interval = Double(settings.refreshInterval) * 60
         refreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor in
-                await self.handleTimerFire()
+                // Only refresh if not idle
+                guard !self.isIdle else { return }
+                await self.refresh()
             }
         }
     }
 
-    private func handleTimerFire() async {
-        let idleThreshold = Double(settings.idleThresholdMinutes) * 60
-        let idle = systemIdleSeconds()
-
-        if idleThreshold > 0 && idle >= idleThreshold {
-            // User is idle — pause normal refresh, start idle watch
-            isIdle = true
-            refreshTimer?.invalidate()
-            startIdleWatchTimer()
-        } else {
-            // User is active — fetch normally
-            isIdle = false
-            await refresh()
-        }
-    }
-
-    /// Polls every 30s while idle to detect when user returns
-    private func startIdleWatchTimer() {
-        guard idleWatchTimer == nil || !(idleWatchTimer?.isValid ?? false) else { return }
-        idleWatchTimer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+    /// Always-running timer that checks idle state every 15 seconds.
+    /// This is independent of the refresh timer so idle is detected promptly.
+    private func startIdlePollTimer() {
+        idlePollTimer?.invalidate()
+        idlePollTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
             guard let self else { return }
             Task { @MainActor in
-                await self.checkIdleReturn()
+                self.checkIdleState()
             }
         }
     }
 
-    private func checkIdleReturn() async {
-        let idleThreshold = Double(settings.idleThresholdMinutes) * 60
+    private func checkIdleState() {
+        let thresholdMinutes = settings.idleThresholdMinutes
+        guard thresholdMinutes > 0 else {
+            // Idle detection disabled
+            if isIdle {
+                isIdle = false
+            }
+            return
+        }
+
+        let thresholdSecs = Double(thresholdMinutes) * 60
         let idle = systemIdleSeconds()
 
-        guard idleThreshold <= 0 || idle < idleThreshold else { return }
-
-        // User returned!
-        isIdle = false
-        idleWatchTimer?.invalidate()
-        idleWatchTimer = nil
-
-        // Immediate refresh, then resume normal schedule
-        await refresh()
-        scheduleRefreshTimer()
+        if idle >= thresholdSecs && !isIdle {
+            // Transition: active → idle
+            isIdle = true
+        } else if idle < thresholdSecs && isIdle {
+            // Transition: idle → active (user returned)
+            isIdle = false
+            // Immediate refresh on return
+            Task { await refresh() }
+        }
     }
 }

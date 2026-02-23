@@ -30,6 +30,7 @@ final class Settings: ObservableObject {
     // 0 = never pause. Options in minutes.
     static let idleOptions: [(label: String, minutes: Int)] = [
         ("从不", 0),
+        ("1 分钟", 1),
         ("5 分钟", 5),
         ("10 分钟", 10),
         ("30 分钟", 30),

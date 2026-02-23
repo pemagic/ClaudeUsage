@@ -1,165 +1,441 @@
 import SwiftUI
 
+// MARK: - Pace helpers
+
+struct PaceInfo {
+    let ahead: Bool
+    let percentDiff: Int
+    let runsOutIn: TimeInterval?
+}
+
+private func calcWeeklyPace(usage: Double, resetDate: Date) -> PaceInfo? {
+    let now = Date()
+    let remaining = resetDate.timeIntervalSince(now)
+    guard remaining > 0 else { return nil }
+
+    let total: TimeInterval = 7 * 24 * 3600
+    let elapsed = total - remaining
+    guard elapsed > 300 else { return nil } // Need >5 min of data
+
+    let expectedByNow = elapsed / total
+    let ahead = usage > expectedByNow
+    let pctDiff: Int = Int((abs(usage - expectedByNow) * 100).rounded())
+
+    let rate = usage / elapsed // fraction per second
+    let runsOut: TimeInterval? = rate > 0 ? {
+        let t = max(0, 1.0 - usage) / rate
+        return t < remaining ? t : nil
+    }() : nil
+
+    return PaceInfo(ahead: ahead, percentDiff: pctDiff, runsOutIn: runsOut)
+}
+
+private func formatDuration(_ s: TimeInterval) -> String {
+    let d = Int(s / 86400)
+    let h = Int(s.truncatingRemainder(dividingBy: 86400) / 3600)
+    let m = Int(s.truncatingRemainder(dividingBy: 3600) / 60)
+    if d > 0 { return "\(d)d \(h)h" }
+    if h > 0 { return "\(h)h \(m)m" }
+    return "\(m)m"
+}
+
+// MARK: - Main view
+
 struct MenuBarView: View {
     @EnvironmentObject var store: UsageStore
     @EnvironmentObject var settings: Settings
+    @State private var showSettings = false
+
+    private let accent = Color(red: 0.72, green: 0.45, blue: 0.20)
+    private let panelWidth: CGFloat = 295
 
     var body: some View {
         Group {
-            usageSection
+            if showSettings {
+                SettingsPanelView(showSettings: $showSettings)
+            } else {
+                mainView
+            }
+        }
+        .frame(width: panelWidth)
+    }
+
+    // MARK: - Main layout
+
+    var mainView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            headerSection
             Divider()
-            settingsMenu
+            contentSection
             Divider()
-            Button("↺ Refresh Now") {
+            footerSection
+        }
+    }
+
+    // MARK: - Header
+
+    var headerSection: some View {
+        HStack(alignment: .top, spacing: 0) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Claude")
+                    .font(.system(size: 17, weight: .bold))
+                Text(headerSubtitle)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text("Max")
+                .font(.system(size: 11, weight: .semibold))
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(accent.opacity(0.18))
+                .foregroundStyle(accent)
+                .clipShape(RoundedRectangle(cornerRadius: 5))
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
+    }
+
+    private var headerSubtitle: String {
+        if let snap = store.snapshot { return "Updated \(timeAgo(snap.fetchedAt))" }
+        if store.isLoading { return "Updating..." }
+        return "Not updated"
+    }
+
+    private func timeAgo(_ date: Date) -> String {
+        let s = -date.timeIntervalSinceNow
+        if s < 60 { return "just now" }
+        if s < 3600 { return "\(Int(s / 60))m ago" }
+        return "\(Int(s / 3600))h ago"
+    }
+
+    // MARK: - Content
+
+    @ViewBuilder
+    var contentSection: some View {
+        if store.isIdle {
+            idleView
+        } else if let snap = store.snapshot {
+            usageContent(snap: snap)
+        } else if store.isLoading {
+            loadingView
+        } else {
+            errorView
+        }
+    }
+
+    @ViewBuilder
+    func usageContent(snap: UsageSnapshot) -> some View {
+        usageBlock(title: "Session",
+                   value: snap.fiveHourAll,
+                   resetDate: snap.fiveHourResetsDate,
+                   pace: nil)
+
+        if snap.weeklyAll != nil {
+            Divider()
+            let pace: PaceInfo? = {
+                guard let u = snap.weeklyAll, let d = snap.weeklyResetsDate else { return nil }
+                return calcWeeklyPace(usage: u, resetDate: d)
+            }()
+            usageBlock(title: "Weekly",
+                       value: snap.weeklyAll,
+                       resetDate: snap.weeklyResetsDate,
+                       pace: pace)
+        }
+
+        if let sonnet = snap.weeklyOpus ?? snap.fiveHourOpus {
+            Divider()
+            usageBlock(title: "Sonnet",
+                       value: sonnet,
+                       resetDate: snap.weeklyResetsDate ?? snap.fiveHourResetsDate,
+                       pace: nil)
+        }
+
+        Divider()
+        costSection()
+    }
+
+    // MARK: - Usage block
+
+    func usageBlock(title: String, value: Double?, resetDate: Date?, pace: PaceInfo?) -> some View {
+        let remaining = value.map { max(0, min(1, 1.0 - $0)) } ?? 0
+        let pct = value.map { v -> Int in
+            let ratio = settings.showRemaining ? (1.0 - v) : v
+            return Int((ratio * 100).rounded())
+        }
+        let countdownStr: String? = resetDate.flatMap { d -> String? in
+            let secs = d.timeIntervalSinceNow
+            guard secs > 0 else { return nil }
+            return formatDuration(secs)
+        }
+
+        return VStack(alignment: .leading, spacing: 0) {
+            // Section title
+            Text(title)
+                .font(.system(size: 16, weight: .bold))
+                .padding(.bottom, 8)
+
+            // Progress bar
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(accent.opacity(0.15))
+                        .frame(height: 10)
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(accent)
+                        .frame(width: geo.size.width * remaining, height: 10)
+                }
+            }
+            .frame(height: 10)
+            .padding(.bottom, 7)
+
+            // % left  ·  reset countdown
+            HStack(alignment: .firstTextBaseline) {
+                if let p = pct {
+                    Text(settings.showRemaining ? "\(p)% left" : "\(p)% used")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("—").font(.system(size: 13)).foregroundStyle(.secondary)
+                }
+                Spacer()
+                if let c = countdownStr {
+                    Text("Resets in \(c)")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            // Pace line (weekly only)
+            if let p = pace {
+                Text(paceText(p))
+                    .font(.system(size: 12))
+                    .foregroundStyle(.tertiary)
+                    .padding(.top, 4)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+    }
+
+    private func paceText(_ p: PaceInfo) -> String {
+        let sign = p.ahead ? "+" : "−"
+        let base = "Pace: \(p.ahead ? "Ahead" : "Behind") (\(sign)\(p.percentDiff)%)"
+        if let t = p.runsOutIn {
+            return base + " · Runs out in \(formatDuration(t))"
+        }
+        return base
+    }
+
+    // MARK: - Cost section
+
+    func costSection() -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Cost")
+                .font(.system(size: 16, weight: .bold))
+
+            if let cd = store.costData, cd.last30DaysTokens > 0 {
+                HStack(spacing: 4) {
+                    Text("Today:")
+                        .foregroundStyle(.secondary)
+                    Text(cd.formattedTodayCost)
+                    Text("·").foregroundStyle(.secondary)
+                    Text("\(cd.formattedTodayTokens) tokens").foregroundStyle(.secondary)
+                }
+                .font(.system(size: 13))
+
+                HStack(spacing: 4) {
+                    Text("Last 30 days:")
+                        .foregroundStyle(.secondary)
+                    Text(cd.formattedMonthlyCost)
+                    Text("·").foregroundStyle(.secondary)
+                    Text("\(cd.formattedMonthlyTokens) tokens").foregroundStyle(.secondary)
+                }
+                .font(.system(size: 13))
+            } else {
+                Text("Scanning logs...")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+    }
+
+    // MARK: - State views
+
+    var idleView: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "moon.zzz").foregroundStyle(.secondary)
+            Text("Paused (\(settings.idleThresholdMinutes)m idle)")
+                .font(.system(size: 13)).foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 18)
+    }
+
+    var loadingView: some View {
+        HStack(spacing: 8) {
+            ProgressView().scaleEffect(0.7)
+            Text("Fetching usage...")
+                .font(.system(size: 13)).foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 18)
+    }
+
+    var errorView: some View {
+        Text(store.lastError ?? "No data")
+            .font(.system(size: 13)).foregroundStyle(.red)
+            .padding(.horizontal, 16).padding(.vertical, 18)
+    }
+
+    // MARK: - Footer
+
+    var footerSection: some View {
+        VStack(spacing: 0) {
+            footerRow("Refresh Now", icon: "arrow.clockwise") {
                 Task { await store.refresh() }
             }
-            .keyboardShortcut("r", modifiers: [])
             Divider()
-            Button("Quit ClaudeUsage") {
+            footerRow("Settings...", icon: "gear") { showSettings = true }
+            Divider()
+            footerRow("Quit ClaudeUsage", icon: nil) {
                 NSApplication.shared.terminate(nil)
             }
         }
     }
 
-    // MARK: - Usage section
+    func footerRow(_ label: String, icon: String?, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 7) {
+                if let icon {
+                    Image(systemName: icon).frame(width: 16).foregroundStyle(.secondary)
+                }
+                Text(label)
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 9)
+    }
+}
 
-    @ViewBuilder
-    var usageSection: some View {
-        if store.isIdle {
+// MARK: - Settings Panel
+
+struct SettingsPanelView: View {
+    @EnvironmentObject var settings: Settings
+    @EnvironmentObject var store: UsageStore
+    @Binding var showSettings: Bool
+
+    private let accent = Color(red: 0.72, green: 0.45, blue: 0.20)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Nav header
             HStack {
-                Image(systemName: "moon.zzz")
-                Text("已休眠（\(settings.idleThresholdMinutes) 分钟无操作）")
+                Button { showSettings = false } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "chevron.left").font(.system(size: 11, weight: .semibold))
+                        Text("Back")
+                    }
+                }
+                .buttonStyle(.plain).foregroundStyle(accent)
+
+                Spacer()
+                Text("Settings").font(.system(size: 15, weight: .bold))
+                Spacer()
+
+                HStack(spacing: 3) {
+                    Image(systemName: "chevron.left").font(.system(size: 11, weight: .semibold))
+                    Text("Back")
+                }.opacity(0)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 11)
+
+            Divider()
+
+            settingRow("Refresh Interval") {
+                HStack(spacing: 6) {
+                    ForEach(Settings.refreshOptions, id: \.self) { min in
+                        pillButton(min == 1 ? "1m" : "\(min)m",
+                                   active: settings.refreshInterval == min) {
+                            settings.refreshInterval = min
+                            store.scheduleRefreshTimer()
+                        }
+                    }
+                }
+            }
+
+            Divider()
+
+            settingRow("Auto-sleep After") {
+                VStack(alignment: .leading, spacing: 5) {
+                    ForEach(Settings.idleOptions, id: \.minutes) { opt in
+                        radioButton(opt.label,
+                                    selected: settings.idleThresholdMinutes == opt.minutes) {
+                            settings.idleThresholdMinutes = opt.minutes
+                            store.scheduleRefreshTimer()
+                        }
+                    }
+                }
+            }
+
+            Divider()
+
+            settingRow("Display") {
+                HStack(spacing: 6) {
+                    pillButton("Remaining", active: settings.showRemaining) { settings.showRemaining = true }
+                    pillButton("Used",      active: !settings.showRemaining) { settings.showRemaining = false }
+                }
+            }
+
+            Divider()
+
+            settingRow(nil) {
+                radioButton("Launch at Login", selected: settings.launchAtLogin) {
+                    settings.launchAtLogin.toggle()
+                }
+            }
+        }
+    }
+
+    func pillButton(_ label: String, active: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 12, weight: .medium))
+                .padding(.horizontal, 9).padding(.vertical, 4)
+                .background(active ? accent.opacity(0.22) : Color.primary.opacity(0.07))
+                .foregroundStyle(active ? accent : Color.primary)
+                .clipShape(RoundedRectangle(cornerRadius: 5))
+        }
+        .buttonStyle(.plain)
+    }
+
+    func radioButton(_ label: String, selected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(selected ? accent : Color.secondary)
+                Text(label).font(.system(size: 13))
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    func settingRow<C: View>(_ title: String?, @ViewBuilder content: () -> C) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            if let title {
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
             }
-        } else if let snap = store.snapshot {
-            Text("当前会话")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.secondary)
-            usageRow(label: "5h（全部模型）",
-                     value: snap.fiveHourAll,
-                     resetIn: snap.fiveHourResetsAt)
-            usageRow(label: "5h（Opus）",
-                     value: snap.fiveHourOpus,
-                     resetIn: nil)
-            Divider()
-            Text("本周")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.secondary)
-            usageRow(label: "周用量（全部）",
-                     value: snap.weeklyAll,
-                     resetIn: snap.weeklyResetsAt)
-            usageRow(label: "周用量（Opus）",
-                     value: snap.weeklyOpus,
-                     resetIn: nil)
-            Divider()
-            Text("更新于 \(snap.fetchedAt, style: .time)")
-                .font(.system(size: 10))
-                .foregroundStyle(.tertiary)
-        } else if store.isLoading {
-            HStack {
-                ProgressView().scaleEffect(0.6)
-                Text("正在获取用量…").foregroundStyle(.secondary)
-            }
-        } else {
-            Text(store.lastError ?? "暂无数据").foregroundStyle(.red)
+            content()
         }
-    }
-
-    func usageRow(label: String, value: Double?, resetIn: String?) -> some View {
-        let pct: Int? = value.map { v in
-            let ratio = settings.showRemaining ? (1.0 - v) : v
-            return Int((ratio * 100).rounded())
-        }
-        let display = pct.map { p in
-            resetIn.map { "\(p)% · \($0)" } ?? "\(p)%"
-        } ?? "—"
-        let color: Color = {
-            guard let v = value else { return .secondary }
-            if v > 0.8 { return .red }
-            if v > 0.6 { return .orange }
-            return .primary
-        }()
-        return HStack {
-            Text(label).foregroundStyle(.secondary)
-            Spacer()
-            Text(display).foregroundStyle(color)
-        }
-    }
-
-    // MARK: - Settings menu
-
-    @ViewBuilder
-    var settingsMenu: some View {
-        Menu("⚙ 设置") {
-            // Refresh interval
-            Menu("刷新间隔") {
-                ForEach(Settings.refreshOptions, id: \.self) { minutes in
-                    Button {
-                        settings.refreshInterval = minutes
-                        store.scheduleRefreshTimer()
-                    } label: {
-                        HStack {
-                            if settings.refreshInterval == minutes {
-                                Image(systemName: "checkmark")
-                            }
-                            Text(minutes == 1 ? "1 分钟" : "\(minutes) 分钟")
-                        }
-                    }
-                }
-            }
-
-            Divider()
-
-            // Idle / auto-sleep threshold
-            Menu("自动休眠") {
-                ForEach(Settings.idleOptions, id: \.minutes) { option in
-                    Button {
-                        settings.idleThresholdMinutes = option.minutes
-                        store.scheduleRefreshTimer()
-                    } label: {
-                        HStack {
-                            if settings.idleThresholdMinutes == option.minutes {
-                                Image(systemName: "checkmark")
-                            }
-                            Text(option.label)
-                        }
-                    }
-                }
-            }
-
-            Divider()
-
-            // Display mode
-            Menu("显示方式") {
-                Button {
-                    settings.showRemaining = true
-                } label: {
-                    HStack {
-                        if settings.showRemaining { Image(systemName: "checkmark") }
-                        Text("剩余用量")
-                    }
-                }
-                Button {
-                    settings.showRemaining = false
-                } label: {
-                    HStack {
-                        if !settings.showRemaining { Image(systemName: "checkmark") }
-                        Text("已用用量")
-                    }
-                }
-            }
-
-            Divider()
-
-            // Launch at login
-            Button {
-                settings.launchAtLogin.toggle()
-            } label: {
-                HStack {
-                    if settings.launchAtLogin { Image(systemName: "checkmark") }
-                    Text("开机启动")
-                }
-            }
-        }
+        .padding(.horizontal, 16).padding(.vertical, 11)
     }
 }

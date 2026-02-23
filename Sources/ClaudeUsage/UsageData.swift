@@ -8,6 +8,17 @@ struct UsageSnapshot {
     let weeklyOpus: Double?
     let fiveHourResetsAt: String?
     let weeklyResetsAt: String?
+
+    // Parsed reset dates for countdown display and pace calculation
+    let fiveHourResetsDate: Date?
+    let weeklyResetsDate: Date?
+
+    // Cost data from CLI (nil when not present in output)
+    let todayCost: String?       // e.g. "30.87"
+    let todayTokens: String?     // e.g. "309M"
+    let monthlyCost: String?
+    let monthlyTokens: String?
+
     let fetchedAt: Date
     let rawText: String   // kept for debugging
 

@@ -20,7 +20,9 @@ actor UsageFetcher {
     }
 
     private static func findClaude() -> String? {
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
         let candidates = [
+            "\(home)/.local/bin/claude",
             "/usr/local/bin/claude",
             "/opt/homebrew/bin/claude",
             "/usr/bin/claude",
@@ -86,12 +88,28 @@ actor UsageFetcher {
             if process.isRunning { process.terminate() }
         }
 
-        try await Task.sleep(nanoseconds: 2_000_000_000)
-        _ = drainFD(primaryFD)
+        // Wait for the CLI welcome screen to finish rendering.
+        // Instead of a fixed delay, wait until output goes quiet for 600ms (max 10s).
+        let readyDeadline = Date().addingTimeInterval(10)
+        var lastActivity = Date()
+        while Date() < readyDeadline {
+            let chunk = drainFD(primaryFD)
+            if !chunk.isEmpty {
+                lastActivity = Date()
+            } else if Date().timeIntervalSince(lastActivity) >= 0.6 {
+                break  // CLI quiet for 600ms → ready
+            }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        _ = drainFD(primaryFD)  // final drain
 
         write(primaryFD, "/usage\r", 7)
 
         let stopStrings = [
+            // These appear at end of the cost section — preferred stop points
+            "last 30 days",
+            "last month",
+            // Fallback: weekly/session section headers (no cost in output)
             "current week (all models)",
             "current week (opus)",
             "current week (sonnet)",
@@ -100,30 +118,46 @@ actor UsageFetcher {
         ]
 
         var buffer = Data()
-        let deadline = Date().addingTimeInterval(20)
+        let deadline = Date().addingTimeInterval(30)
         var lastEnterSent = Date()
+        var lastNewDataAt = Date()
         var found = false
 
         while Date() < deadline {
             let chunk = drainFD(primaryFD)
             if !chunk.isEmpty {
                 buffer.append(chunk)
-                if let text = String(data: buffer, encoding: .utf8) {
-                    let lower = text.lowercased()
-                    if stopStrings.contains(where: { lower.contains($0) }) {
-                        found = true
-                        try await Task.sleep(nanoseconds: 500_000_000)
-                        buffer.append(drainFD(primaryFD))
-                        break
-                    }
+                lastNewDataAt = Date()
+                // Use lossy UTF-8 so invalid bytes never cause nil
+                let text = String(decoding: buffer, as: UTF8.self)
+                let lower = text.lowercased()
+                if stopStrings.contains(where: { lower.contains($0) }) {
+                    found = true
+                    try await Task.sleep(nanoseconds: 500_000_000)
+                    buffer.append(drainFD(primaryFD))
+                    break
                 }
             }
+
+            // Fallback: % data present and CLI quiet for 2s (handles unknown output formats)
+            if buffer.count > 100,
+               Date().timeIntervalSince(lastNewDataAt) >= 2.0 {
+                let text = String(decoding: buffer, as: UTF8.self)
+                if text.contains("%") {
+                    found = true
+                    break
+                }
+            }
+
             if Date().timeIntervalSince(lastEnterSent) >= 0.8 {
                 write(primaryFD, "\r", 1)
                 lastEnterSent = Date()
             }
             try await Task.sleep(nanoseconds: 60_000_000)
         }
+
+        // Always save raw buffer for debugging
+        try? buffer.write(to: URL(fileURLWithPath: "/tmp/claude_usage_debug.txt"))
 
         guard found else { throw FetchError.timeout }
         guard !buffer.isEmpty else { throw FetchError.outputEmpty }
