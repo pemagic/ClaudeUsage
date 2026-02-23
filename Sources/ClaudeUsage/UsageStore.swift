@@ -40,6 +40,8 @@ final class UsageStore: ObservableObject {
     private var refreshTimer: Timer?
     /// Lightweight timer that polls idle state every 15s — independent of refresh timer
     private var idlePollTimer: Timer?
+    /// One-shot timer that fires when a usage window resets, triggering an immediate refresh
+    private var resetTimer: Timer?
 
     init(settings: Settings) {
         self.settings = settings
@@ -84,6 +86,7 @@ final class UsageStore: ObservableObject {
         costData = result.1
         lastError = result.2
         isLoading = false
+        scheduleResetTimer()
     }
 
     // MARK: - Timer management
@@ -96,6 +99,30 @@ final class UsageStore: ObservableObject {
             guard let self else { return }
             Task { @MainActor in
                 // Only refresh if not idle
+                guard !self.isIdle else { return }
+                await self.refresh()
+            }
+        }
+    }
+
+    /// Schedule a one-shot timer at the earliest upcoming reset time.
+    /// When it fires, we re-fetch so the UI shows fresh post-reset data
+    /// instead of stale "11% + 0m" for minutes.
+    private func scheduleResetTimer() {
+        resetTimer?.invalidate()
+        resetTimer = nil
+
+        guard let snap = snapshot else { return }
+
+        // Find the earliest future reset date
+        let candidates = [snap.fiveHourResetsDate, snap.weeklyResetsDate].compactMap { $0 }
+        guard let earliest = candidates.filter({ $0.timeIntervalSinceNow > 0 }).min() else { return }
+
+        // Fire 5 seconds after reset to give the backend time to update
+        let delay = earliest.timeIntervalSinceNow + 5
+        resetTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            Task { @MainActor in
                 guard !self.isIdle else { return }
                 await self.refresh()
             }
