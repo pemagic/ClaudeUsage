@@ -1,171 +1,171 @@
 # ClaudeUsage
 
-**A native macOS menu bar app that monitors your Claude Code usage in real time.**
+**一个原生 macOS 菜单栏应用，实时监控你的 Claude Code 用量。**
 
 <p align="center">
-  <img src="https://img.shields.io/badge/platform-macOS_13%2B-blue" />
+  <img src="https://img.shields.io/badge/平台-macOS_13%2B-blue" />
   <img src="https://img.shields.io/badge/Swift-5.9-orange" />
-  <img src="https://img.shields.io/badge/SPM-compatible-brightgreen" />
-  <img src="https://img.shields.io/badge/license-MIT-green" />
+  <img src="https://img.shields.io/badge/SPM-兼容-brightgreen" />
+  <img src="https://img.shields.io/badge/许可证-MIT-green" />
 </p>
 
 <p align="center">
-  <a href="README_CN.md">🇨🇳 中文文档</a>
+  <a href="README_EN.md">🇺🇸 English</a>
 </p>
 
 <p align="center">
-  <img src="assets/screenshot-menubar.svg" width="320" alt="ClaudeUsage popup" />
+  <img src="assets/screenshot-menubar.svg" width="320" alt="ClaudeUsage 弹出面板" />
   &nbsp;&nbsp;&nbsp;
-  <img src="assets/screenshot-idle.svg" width="320" alt="ClaudeUsage idle state" />
+  <img src="assets/screenshot-idle.svg" width="320" alt="ClaudeUsage 空闲状态" />
 </p>
 
-## Why ClaudeUsage?
+## 为什么做 ClaudeUsage？
 
-Claude Max plan has session (5-hour) and weekly (7-day) usage limits, but there's no easy way to check how much you've consumed without opening the CLI and running `/usage`. ClaudeUsage sits quietly in your menu bar and shows the percentage at a glance — plus pace predictions, reset countdowns, and cost tracking.
+Claude Max 计划有会话（5小时）和周（7天）用量限制，但没有方便的方式查看消耗了多少——你得打开 CLI 手动运行 `/usage`。ClaudeUsage 安静地待在菜单栏，一眼就能看到百分比，还有消耗速度预测、重置倒计时和费用追踪。
 
-## Inspired by CodexBar
+## 致敬 CodexBar
 
-This project was inspired by [CodexBar](https://github.com/steipete/CodexBar) — a feature-rich multi-provider AI usage dashboard by Peter Steinberger. We're grateful for CodexBar's pioneering work in this space. ClaudeUsage takes a different approach, optimizing specifically for Claude Code users who value simplicity and security.
+本项目受 [CodexBar](https://github.com/steipete/CodexBar) 启发——Peter Steinberger 开发的多 Provider AI 用量仪表盘。感谢 CodexBar 在这一领域的开创性工作。ClaudeUsage 采用不同的思路，专为 Claude Code 用户做了轻量化和安全性优化。
 
 | | ClaudeUsage | CodexBar |
 |---|---|---|
-| **Data source** | Official CLI `/usage` — Anthropic's own numbers | OAuth API / CLI PTY / browser cookies |
-| **Security** | Zero network calls, no Keychain, no credentials | Keychain + API auth |
-| **App size** | < 1 MB, zero dependencies | ~50 MB, multiple frameworks |
-| **Min macOS** | 13 (Ventura) | 14 (Sonoma) |
-| **Scope** | Claude Code (focused) | 20+ AI providers |
-| **Pace prediction** | ✅ | — |
-| **Idle detection** | ✅ IOKit | — |
-| **Desktop widget** | ✅ Frosted glass | ✅ WidgetKit |
-| **Cost chart / CLI / Linux** | — | ✅ |
+| **数据来源** | 官方 CLI `/usage` — Anthropic 原始数据 | OAuth API / CLI PTY / 浏览器 cookie |
+| **安全性** | 零网络请求，不碰钥匙串和凭证 | 钥匙串 + API 认证 |
+| **体积** | < 1 MB，零依赖 | ~50 MB，多个框架 |
+| **最低系统** | macOS 13 (Ventura) | macOS 14 (Sonoma) |
+| **覆盖范围** | Claude Code（专注） | 20+ AI 服务 |
+| **消耗速度预测** | ✅ | — |
+| **空闲检测** | ✅ IOKit | — |
+| **桌面小组件** | ✅ 毛玻璃悬浮窗 | ✅ WidgetKit |
+| **费用图表 / CLI / Linux** | — | ✅ |
 
-**Choose ClaudeUsage** for a lightweight, focused Claude monitor. **Choose CodexBar** for a multi-provider dashboard.
+**选 ClaudeUsage** — 轻量专注的 Claude 监控。**选 CodexBar** — 多 Provider 综合仪表盘。
 
-## Features
+## 功能特性
 
-### Usage Monitoring
-- **Menu bar indicator** — a cat icon 🐱 with your current session usage percentage, always visible
-- **Session limit** — 5-hour rolling window usage with progress bar
-- **Weekly limit** — 7-day usage with progress bar (all models + Sonnet breakdown)
-- **Reset countdown** — real-time "Resets in 2d 5h" countdown for each limit
+### 用量监控
+- **菜单栏指示器** — 猫咪图标 🐱 旁显示当前会话用量百分比，始终可见
+- **会话限制** — 5 小时滚动窗口用量，带进度条
+- **周限制** — 7 天用量，带进度条（全模型 + Sonnet 单独统计）
+- **重置倒计时** — 实时显示距离重置的时间，如"Resets in 2d 5h"
 
-### Pace Prediction
-- **Ahead / Behind** — compares your actual consumption to linear expected pace
-- **Run-out estimate** — if you're consuming too fast, shows when you'll hit the limit (e.g. "Runs out in 1d 3h")
+### 消耗速度预测
+- **超前 / 落后** — 将你的实际消耗与线性预期速度对比
+- **耗尽预估** — 如果消耗过快，显示预计何时用完（如"Runs out in 1d 3h"）
 
-### Cost Tracking
-- Scans `~/.claude/projects/**/*.jsonl` session logs locally
-- Per-model pricing for Opus 4.5/4.6, Sonnet 4.5/4.6, Haiku, and legacy models
-- Tiered pricing support (Sonnet 200K+ token threshold)
-- Shows **today's cost** and **last 30 days** with token counts
-- Message deduplication by `message.id` (streaming produces cumulative lines)
+### 费用追踪
+- 本地扫描 `~/.claude/projects/**/*.jsonl` 会话日志
+- 支持 Opus 4.5/4.6、Sonnet 4.5/4.6、Haiku 及旧版模型的独立定价
+- 支持阶梯定价（Sonnet 超过 200K token 阈值后价格更高）
+- 显示**今日费用**和**最近 30 天**费用及 token 数量
+- 通过 `message.id` 去重（流式输出会产生累积的多行记录）
 
-### Desktop Widget
-- **Floating widget** — a frosted-glass widget that sits on your desktop, always visible across all Spaces
-- **Two sizes** — Small (compact 180×190 block) or Medium (320×140 with full details)
-- **Fresh color palette** — ocean blue (session), coral pink (weekly), mint green (cost), warm purple (branding)
-- **Draggable** — drag to any position, remembered across launches
-- **Zero overhead** — shares the same data store as the menu bar; no extra polling or IPC
+### 桌面小组件
+- **悬浮小组件** — 毛玻璃背景的桌面小组件，跨所有桌面空间始终可见
+- **双尺寸** — 小号（紧凑 180×190 方块）或中号（320×140 完整信息）
+- **清新多彩** — 海洋蓝（会话）、珊瑚粉（周用量）、薄荷绿（费用）、暖紫（品牌）
+- **可拖拽** — 拖到任意位置，重启后自动记住
+- **零额外开销** — 与菜单栏共享同一数据源，无需额外轮询或进程间通信
 
-### Smart Idle Detection
-- Polls system idle time via IOKit `HIDIdleTime` every 15 seconds
-- When idle threshold is reached, pauses all polling and shows ⏸ in menu bar
-- Automatically resumes with immediate refresh when you return
-- Configurable: 1 min, 5 min, 10 min, 30 min, 1 hour, or never
+### 智能空闲检测
+- 每 15 秒通过 IOKit `HIDIdleTime` 检测系统空闲时间
+- 达到空闲阈值后暂停所有轮询，菜单栏显示 ⏸
+- 用户回来后自动恢复并立即刷新
+- 可配置：1 分钟、5 分钟、10 分钟、30 分钟、1 小时、或从不
 
-### Settings
-- **Refresh interval** — 1m, 3m, 5m, 10m, 30m
-- **Auto-sleep** — pause when idle (1m–1h, or never)
-- **Display mode** — show remaining % or used %
-- **Launch at login** — via SMAppService
+### 设置选项
+- **刷新间隔** — 1分钟, 3分钟, 5分钟, 10分钟, 30分钟
+- **自动休眠** — 空闲后暂停（1分钟–1小时，或从不）
+- **显示模式** — 显示剩余 % 或已用 %
+- **登录时启动** — 通过 SMAppService 实现
 
-## Architecture
+## 架构设计
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    ClaudeUsageApp                        │
-│              MenuBarExtra (.window style)                │
+│              MenuBarExtra (.window 样式)                 │
 │         ┌──────────┐    ┌──────────────┐                │
-│         │ Cat Icon │    │ Usage % Text │                │
+│         │ 猫咪图标 │    │  用量百分比  │                │
 │         └──────────┘    └──────────────┘                │
 ├─────────────────────────────────────────────────────────┤
 │                      MenuBarView                        │
 │  ┌──────────┬──────────┬──────────┬──────────────────┐  │
-│  │ Session  │ Weekly   │ Sonnet   │  Cost Section    │  │
-│  │ Block    │ Block    │ Block    │  Today / 30 Day  │  │
-│  │ + Bar    │ + Bar    │ + Bar    │  $ + Tokens      │  │
-│  │ + Reset  │ + Reset  │ + Reset  │                  │  │
-│  │          │ + Pace   │          │                  │  │
+│  │ 会话用量 │ 周用量   │ Sonnet   │   费用统计       │  │
+│  │ + 进度条 │ + 进度条 │ + 进度条 │  今日 / 30 天    │  │
+│  │ + 重置   │ + 重置   │ + 重置   │  $ + Token 数    │  │
+│  │          │ + 速度   │          │                  │  │
 │  └──────────┴──────────┴──────────┴──────────────────┘  │
 ├─────────────────────────────────────────────────────────┤
 │                      UsageStore                         │
-│        @MainActor, @Published properties                │
+│          @MainActor, @Published 属性                    │
 │  ┌────────────────┐  ┌──────────────────────┐           │
 │  │  refreshTimer  │  │   idlePollTimer      │           │
-│  │  (configurable)│  │   (every 15 sec)     │           │
+│  │  (可配置间隔)  │  │   (每 15 秒)         │           │
 │  └───────┬────────┘  └──────────┬───────────┘           │
 │          │                      │                       │
 │          ▼                      ▼                       │
 │  ┌─── Task.detached ───┐  ┌─ checkIdleState() ─┐       │
-│  │                     │  │ IOKit HIDIdleTime   │       │
-│  │  UsageFetcher.fetch │  │ → pause / resume    │       │
-│  │  UsageParser.parse  │  └─────────────────────┘       │
+│  │  (后台线程执行)     │  │ IOKit HIDIdleTime   │       │
+│  │                     │  │ → 暂停 / 恢复       │       │
+│  │  UsageFetcher.fetch │  └─────────────────────┘       │
+│  │  UsageParser.parse  │                               │
 │  │  CostScanner.scan   │                               │
 │  └─────────────────────┘                               │
 └─────────────────────────────────────────────────────────┘
 
-Data Sources:
+数据来源:
 ┌────────────────────────┐    ┌──────────────────────────┐
 │    Claude CLI (PTY)    │    │  ~/.claude/projects/     │
-│  openpty → /usage cmd  │    │    **/*.jsonl            │
-│  → ANSI strip + parse  │    │  → token cost scan       │
+│  openpty → /usage 命令 │    │    **/*.jsonl            │
+│  → ANSI 剥离 + 解析   │    │  → token 费用扫描        │
 └────────────────────────┘    └──────────────────────────┘
 ```
 
-### Data Flow
+### 数据流
 
-1. **Timer fires** → `UsageStore.refresh()` on main thread
-2. **`Task.detached`** moves all heavy I/O off the main thread:
-   - `UsageFetcher.fetch()` — spawns `claude --allowed-tools ""` via PTY, waits for welcome screen (600ms quiet), sends `/usage`, reads until stop strings detected
-   - `UsageParser.parse()` — strips ANSI escape codes (including `ESC[NC` cursor-right → spaces), extracts percentages and reset times
-   - `CostScanner.scan()` — walks `~/.claude/projects/` for JSONL files modified in last 30 days, extracts token usage per message, deduplicates by message ID, applies per-model pricing
-3. **Back on main thread** — published properties update, SwiftUI re-renders
+1. **定时器触发** → 主线程调用 `UsageStore.refresh()`
+2. **`Task.detached`** 将所有重 I/O 移到后台线程：
+   - `UsageFetcher.fetch()` — 通过 PTY 启动 `claude --allowed-tools ""`，等待欢迎界面结束（600ms 安静），发送 `/usage`，读取到停止字符串
+   - `UsageParser.parse()` — 剥离 ANSI 转义码（包括 `ESC[NC` 光标右移 → 替换为空格），提取百分比和重置时间
+   - `CostScanner.scan()` — 遍历 `~/.claude/projects/` 下最近 30 天修改的 JSONL 文件，提取每条消息的 token 用量，按 message ID 去重，应用每模型定价
+3. **回到主线程** — 更新 Published 属性，SwiftUI 重新渲染
 
-### File Structure
+### 项目结构
 
 ```
 ClaudeUsage/
-├── Package.swift              # SPM manifest (macOS 13+, Swift 5.9)
-├── build.sh                   # Build + .app bundle assembly
+├── Package.swift              # SPM 清单 (macOS 13+, Swift 5.9)
+├── build.sh                   # 构建 + .app 包组装脚本
 ├── Resources/
-│   ├── Info.plist             # LSUIElement=YES (no dock icon)
-│   └── AppIcon.icns           # Generated cat icon
+│   ├── Info.plist             # LSUIElement=YES (不显示 Dock 图标)
+│   └── AppIcon.icns           # 生成的猫咪图标
 ├── Scripts/
-│   └── make-icon.swift        # CoreGraphics icon generator
+│   └── make-icon.swift        # CoreGraphics 图标生成器
 └── Sources/ClaudeUsage/
-    ├── ClaudeUsageApp.swift   # @main, MenuBarExtra, NSImage cat icon
-    ├── MenuBarView.swift      # SwiftUI popup UI, pace calculation
-    ├── UsageStore.swift       # State management, timers, idle detection
-    ├── UsageFetcher.swift     # PTY-based CLI interaction (actor)
-    ├── UsageParser.swift      # ANSI stripping, % and reset parsing
-    ├── UsageData.swift        # UsageSnapshot data model
-    ├── CostScanner.swift      # JSONL log scanning, per-model pricing
-    ├── DesktopWidget.swift    # Floating widget window (NSWindow + frosted glass)
-    ├── WidgetViews.swift      # Small & Medium widget SwiftUI views
+    ├── ClaudeUsageApp.swift   # @main 入口, MenuBarExtra, NSImage 猫咪图标
+    ├── MenuBarView.swift      # SwiftUI 弹出界面, 速度计算
+    ├── UsageStore.swift       # 状态管理, 定时器, 空闲检测
+    ├── UsageFetcher.swift     # PTY 命令行交互 (actor)
+    ├── UsageParser.swift      # ANSI 剥离, 百分比和重置时间解析
+    ├── UsageData.swift        # UsageSnapshot 数据模型
+    ├── CostScanner.swift      # JSONL 日志扫描, 每模型定价
+    ├── DesktopWidget.swift    # 桌面悬浮小组件窗口 (NSWindow + 毛玻璃)
+    ├── WidgetViews.swift      # 小号 & 中号小组件 SwiftUI 视图
     └── Settings.swift         # UserDefaults, SMAppService
 ```
 
-## Install
+## 安装
 
-### Download (Recommended)
+### 直接下载（推荐）
 
-1. Download `ClaudeUsage.app.zip` from the [latest release](../../releases/latest)
-2. Unzip and drag `ClaudeUsage.app` to `/Applications/`
-3. Open it — the cat icon appears in your menu bar
+1. 从[最新 Release](../../releases/latest) 下载 `ClaudeUsage.app.zip`
+2. 解压后将 `ClaudeUsage.app` 拖入 `/Applications/`
+3. 打开应用 — 猫咪图标出现在菜单栏
 
-### Build from Source
+### 从源码构建
 
-Requires **macOS 13+** and **Swift 5.9+** (Xcode 15 CLI tools or standalone Swift toolchain).
+需要 **macOS 13+** 和 **Swift 5.9+**（Xcode 15 命令行工具或独立 Swift 工具链）。
 
 ```bash
 git clone https://github.com/pemagic/ClaudeUsage.git
@@ -175,48 +175,48 @@ cp -r ClaudeUsage.app /Applications/
 open /Applications/ClaudeUsage.app
 ```
 
-`build.sh` runs `swift build -c release`, generates the app icon, and assembles the `.app` bundle. No Xcode project needed.
+`build.sh` 执行 `swift build -c release`，生成应用图标，组装 `.app` 包。无需 Xcode 工程文件。
 
-## Usage
+## 使用方法
 
-Once running, click the cat icon in your menu bar to see the popup:
+启动后点击菜单栏的猫咪图标，弹出面板：
 
-- **Session** — your 5-hour rolling usage (e.g. "72% left · Resets in 3h 42m")
-- **Weekly** — your 7-day usage with pace info (e.g. "Ahead (+12%) · Runs out in 2d 5h")
-- **Sonnet** — Sonnet-specific usage if tracked separately
-- **Cost** — today's and last 30 days' estimated cost and token count
-- **Refresh Now** — trigger an immediate refresh
-- **Settings** — configure refresh interval, idle threshold, display mode
+- **Session（会话）** — 5 小时滚动窗口用量（如"72% left · Resets in 3h 42m"）
+- **Weekly（周）** — 7 天用量及消耗速度（如"Ahead (+12%) · Runs out in 2d 5h"）
+- **Sonnet** — Sonnet 模型单独统计（如有）
+- **Cost（费用）** — 今日和最近 30 天的估算费用及 token 数
+- **Refresh Now** — 立即手动刷新
+- **Settings** — 配置刷新间隔、空闲阈值、显示模式
 
-When you stop using your Mac, the menu bar shows **⏸** and polling pauses. Move the mouse or press a key and it resumes automatically.
+当你停止使用电脑后，菜单栏显示 **⏸**，所有轮询暂停。移动鼠标或按键后自动恢复。
 
-## Pricing Table
+## 技术细节
 
-| Model | Input ($/MTok) | Output ($/MTok) | Cache Read | Cache Create |
-|-------|:-:|:-:|:-:|:-:|
+- CLI 工作目录设为 `/tmp/claudeusage-probe`，避免 macOS TCC 对桌面/文档目录的权限弹窗
+- `env -u CLAUDECODE` 防止从 Claude Code 会话内启动时出现"嵌套会话"错误
+- 欢迎界面可能加载 10KB+ 的 skill 数据才出现 `/usage` 输出——获取器等待 600ms "安静期"而非固定延迟
+- ANSI 光标右移码（`ESC[1C`）在"current week"中出现，剥离时替换为空格
+- 费用扫描使用 C 语言 `fgets` 逐行读取，内存效率高
+- Sonnet 阶梯定价：超过 200K token 后使用更高的每 token 单价
+
+## 定价表
+
+| 模型 | 输入 ($/MTok) | 输出 ($/MTok) | 缓存读取 | 缓存创建 |
+|------|:---:|:---:|:---:|:---:|
 | Opus 4.5/4.6 | $5 | $25 | $0.50 | $6.25 |
 | Opus 4.1 | $15 | $75 | $1.50 | $18.75 |
 | Sonnet 4.5/4.6 | $3 | $15 | $0.30 | $3.75 |
 | Sonnet (>200K) | $6 | $22.50 | $0.60 | $7.50 |
 | Haiku 4.5 | $1 | $5 | $0.10 | $1.25 |
 
-Prices aligned with Anthropic's published API pricing (Feb 2025).
+价格对齐 Anthropic 官方公布的 API 定价（2025 年 2 月）。
 
-## Technical Notes
+## 系统要求
 
-- The CLI working directory is set to `/tmp/claudeusage-probe` to avoid macOS TCC permission dialogs for Desktop/Documents
-- `env -u CLAUDECODE` prevents "nested session" errors when launched from within a Claude Code session
-- The welcome screen can load 10KB+ of skill data before `/usage` output appears — the fetcher waits for 600ms of "quiet" rather than a fixed delay
-- ANSI cursor-right codes (`ESC[1C`) in "current week" are replaced with spaces during stripping
-- Cost scanning reads files line-by-line with C `fgets` for memory efficiency
-- Sonnet tiered pricing (above 200K tokens) uses higher per-token rates
+- macOS 13 Ventura 或更高版本
+- 已安装 [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) 并已登录
+- Claude **Max** 计划（用量数据仅 Max 可用）
 
-## Requirements
-
-- macOS 13 Ventura or later
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated
-- Claude **Max** plan (usage data is only available on Max)
-
-## License
+## 许可证
 
 [MIT](LICENSE)

@@ -51,7 +51,6 @@ struct ClaudeUsageApp: App {
             MenuBarView()
                 .environmentObject(store)
                 .environmentObject(settings)
-                .onAppear { widgetManager.update(store: store, settings: settings) }
                 .onReceive(settings.$widgetMode) { _ in
                     widgetManager.update(store: store, settings: settings)
                 }
@@ -61,6 +60,8 @@ struct ClaudeUsageApp: App {
                 Text(store.menuBarLabel)
                     .monospacedDigit()
             }
+            // label is always visible in menu bar → fires on app launch
+            .task { widgetManager.update(store: store, settings: settings) }
         }
         .menuBarExtraStyle(.window)
     }

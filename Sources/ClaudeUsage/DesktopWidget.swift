@@ -25,6 +25,7 @@ final class DesktopWidgetWindow: NSWindow {
         isOpaque = false
         backgroundColor = .clear
         hasShadow = true
+        animationBehavior = .none
         level = .init(rawValue: NSWindow.Level.statusBar.rawValue - 1)
         collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]
         isMovableByWindowBackground = true
@@ -107,22 +108,26 @@ final class WidgetManager {
         let mode = settings.widgetMode
 
         if mode == 0 {
-            // Off
-            window?.close()
-            window = nil
+            dismiss()
             return
         }
 
         // Recreate window if mode changed or window doesn't exist
         if window == nil || currentMode() != mode {
-            window?.close()
+            dismiss()
             window = DesktopWidgetWindow(store: store, settings: settings)
             window?.orderFront(nil)
         }
     }
 
     func close() {
-        window?.close()
+        dismiss()
+    }
+
+    /// Hide and release the window without triggering close animations
+    /// that cause use-after-free in _NSWindowTransformAnimation.
+    private func dismiss() {
+        window?.orderOut(nil)
         window = nil
     }
 

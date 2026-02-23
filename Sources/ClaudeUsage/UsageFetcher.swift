@@ -90,16 +90,25 @@ actor UsageFetcher {
 
         // Wait for the CLI welcome screen to finish rendering.
         // Capture welcome text — it contains plan/model info (e.g. "Opus 4.6 · Claude Max").
+        // The CLI shows `❯` when ready to accept commands.
         var welcomeData = Data()
-        let readyDeadline = Date().addingTimeInterval(10)
+        let readyDeadline = Date().addingTimeInterval(30)
         var lastActivity = Date()
         while Date() < readyDeadline {
             let chunk = drainFD(primaryFD)
             if !chunk.isEmpty {
                 welcomeData.append(chunk)
                 lastActivity = Date()
-            } else if Date().timeIntervalSince(lastActivity) >= 0.6 {
-                break  // CLI quiet for 600ms → ready
+                // Check for the prompt character (❯ = UTF-8 E2 9D AF)
+                let text = String(decoding: welcomeData, as: UTF8.self)
+                if text.contains("❯") || text.contains(">") && text.contains("claude") {
+                    // Give CLI a moment to fully settle after prompt
+                    try await Task.sleep(nanoseconds: 300_000_000)
+                    welcomeData.append(drainFD(primaryFD))
+                    break
+                }
+            } else if Date().timeIntervalSince(lastActivity) >= 3.0 {
+                break  // CLI quiet for 3s → assume ready
             }
             try await Task.sleep(nanoseconds: 100_000_000)
         }
