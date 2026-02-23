@@ -38,6 +38,7 @@ private func makeCatIcon() -> NSImage {
 struct ClaudeUsageApp: App {
     @StateObject private var settings: Settings
     @StateObject private var store: UsageStore
+    @State private var widgetManager = WidgetManager()
 
     init() {
         let s = Settings()
@@ -50,6 +51,10 @@ struct ClaudeUsageApp: App {
             MenuBarView()
                 .environmentObject(store)
                 .environmentObject(settings)
+                .onAppear { widgetManager.update(store: store, settings: settings) }
+                .onReceive(settings.$widgetMode) { _ in
+                    widgetManager.update(store: store, settings: settings)
+                }
         } label: {
             HStack(spacing: 3) {
                 Image(nsImage: makeCatIcon())

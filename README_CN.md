@@ -51,7 +51,7 @@ Claude Max 计划有会话（5小时）和周（7天）用量限制，但没有�
 
 | | ClaudeUsage | CodexBar |
 |---|---|---|
-| **应用体积** | **772 KB** | ~50 MB（大 65 倍） |
+| **应用体积** | **< 1 MB** | ~50 MB（大 50 倍以上） |
 | **代码规模** | ~10 个 Swift 文件 | 453 个 Swift 文件，共 576 个文件 |
 | **依赖项** | 零 | Sparkle, SweetCookieKit, swift-syntax, Commander, swift-log, KeyboardShortcuts |
 | **最低系统** | macOS 13 (Ventura) | macOS 14 (Sonoma) |
@@ -69,14 +69,14 @@ Claude Max 计划有会话（5小时）和周（7天）用量限制，但没有�
 | 智能空闲检测（IOKit） | ✅ | ❌ |
 | 多 Provider（OpenAI、Cursor、Gemini…） | ❌ 仅 Claude | ✅ 20 个 Provider |
 | 费用历史图表 | ❌ | ✅ |
-| 桌面小组件（WidgetKit） | ❌ | ✅ |
+| 桌面小组件 | ✅ 悬浮窗（毛玻璃） | ✅ WidgetKit |
 | CLI 工具 | ❌ | ✅ |
 | Linux 支持 | ❌ | ✅（仅 CLI） |
 | 登录时启动 | ✅ | ✅ |
 
 ### 总结
 
-**选 ClaudeUsage** — 如果你用 Claude Code，想要一个轻量、精确、尊重隐私的监控工具，读取官方数据，从不碰你的凭证。772 KB，零配置，零风险。
+**选 ClaudeUsage** — 如果你用 Claude Code，想要一个轻量、精确、尊重隐私的监控工具，读取官方数据，从不碰你的凭证。不到 1 MB，零配置，零风险。
 
 **选 CodexBar** — 如果你需要一个支持 20+ AI 服务的统一仪表盘，且不介意更大的体积、Beta 阶段的稳定性、钥匙串访问弹窗，以及直接提取 API 凭证带来的合规风险。
 
@@ -98,6 +98,13 @@ Claude Max 计划有会话（5小时）和周（7天）用量限制，但没有�
 - 支持阶梯定价（Sonnet 超过 200K token 阈值后价格更高）
 - 显示**今日费用**和**最近 30 天**费用及 token 数量
 - 通过 `message.id` 去重（流式输出会产生累积的多行记录）
+
+### 桌面小组件
+- **悬浮小组件** — 毛玻璃背景的桌面小组件，跨所有桌面空间始终可见
+- **双尺寸** — 小号（紧凑 180×190 方块）或中号（320×140 完整信息）
+- **清新多彩** — 海洋蓝（会话）、珊瑚粉（周用量）、薄荷绿（费用）、暖紫（品牌）
+- **可拖拽** — 拖到任意位置，重启后自动记住
+- **零额外开销** — 与菜单栏共享同一数据源，无需额外轮询或进程间通信
 
 ### 智能空闲检测
 - 每 15 秒通过 IOKit `HIDIdleTime` 检测系统空闲时间
@@ -182,6 +189,8 @@ ClaudeUsage/
     ├── UsageParser.swift      # ANSI 剥离, 百分比和重置时间解析
     ├── UsageData.swift        # UsageSnapshot 数据模型
     ├── CostScanner.swift      # JSONL 日志扫描, 每模型定价
+    ├── DesktopWidget.swift    # 桌面悬浮小组件窗口 (NSWindow + 毛玻璃)
+    ├── WidgetViews.swift      # 小号 & 中号小组件 SwiftUI 视图
     └── Settings.swift         # UserDefaults, SMAppService
 ```
 

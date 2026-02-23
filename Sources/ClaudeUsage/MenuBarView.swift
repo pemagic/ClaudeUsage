@@ -433,6 +433,16 @@ struct SettingsPanelView: View {
 
             Divider()
 
+            settingRow("Desktop Widget") {
+                HStack(spacing: 6) {
+                    pillButton("Off", active: settings.widgetMode == 0) { settings.widgetMode = 0 }
+                    pillButton("Small", active: settings.widgetMode == 1) { settings.widgetMode = 1 }
+                    pillButton("Medium", active: settings.widgetMode == 2) { settings.widgetMode = 2 }
+                }
+            }
+
+            Divider()
+
             settingRow(nil) {
                 radioButton("Launch at Login", selected: settings.launchAtLogin) {
                     settings.launchAtLogin.toggle()

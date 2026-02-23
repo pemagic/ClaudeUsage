@@ -51,7 +51,7 @@ Claude Max plan has session (5-hour) and weekly (7-day) usage limits, but there'
 
 | | ClaudeUsage | CodexBar |
 |---|---|---|
-| **App size** | **772 KB** | ~50 MB (65× larger) |
+| **App size** | **< 1 MB** | ~50 MB (50× larger) |
 | **Codebase** | ~10 Swift files | 453 Swift files across 576 total files |
 | **Dependencies** | Zero | Sparkle, SweetCookieKit, swift-syntax, Commander, swift-log, KeyboardShortcuts |
 | **Min macOS** | macOS 13 (Ventura) | macOS 14 (Sonoma) |
@@ -69,14 +69,14 @@ Claude Max plan has session (5-hour) and weekly (7-day) usage limits, but there'
 | Smart idle detection (IOKit) | ✅ | ❌ |
 | Multi-provider (OpenAI, Cursor, Gemini…) | ❌ Claude only | ✅ 20 providers |
 | Cost history chart | ❌ | ✅ |
-| Desktop widget (WidgetKit) | ❌ | ✅ |
+| Desktop widget | ✅ Floating (frosted glass) | ✅ WidgetKit |
 | CLI tool | ❌ | ✅ |
 | Linux support | ❌ | ✅ (CLI only) |
 | Launch at login | ✅ | ✅ |
 
 ### Bottom Line
 
-**Choose ClaudeUsage if** you use Claude Code and want a lightweight, accurate, privacy-respecting monitor that reads official data and never touches your credentials. 772 KB, zero config, zero risk.
+**Choose ClaudeUsage if** you use Claude Code and want a lightweight, accurate, privacy-respecting monitor that reads official data and never touches your credentials. Under 1 MB, zero config, zero risk.
 
 **Choose CodexBar if** you need a unified dashboard for 20+ AI providers and don't mind the larger footprint, beta stability, Keychain access prompts, and the compliance implications of direct API credential extraction.
 
@@ -98,6 +98,13 @@ Claude Max plan has session (5-hour) and weekly (7-day) usage limits, but there'
 - Tiered pricing support (Sonnet 200K+ token threshold)
 - Shows **today's cost** and **last 30 days** with token counts
 - Message deduplication by `message.id` (streaming produces cumulative lines)
+
+### Desktop Widget
+- **Floating widget** — a frosted-glass widget that sits on your desktop, always visible across all Spaces
+- **Two sizes** — Small (compact 180×190 block) or Medium (320×140 with full details)
+- **Fresh color palette** — ocean blue (session), coral pink (weekly), mint green (cost), warm purple (branding)
+- **Draggable** — drag to any position, remembered across launches
+- **Zero overhead** — shares the same data store as the menu bar; no extra polling or IPC
 
 ### Smart Idle Detection
 - Polls system idle time via IOKit `HIDIdleTime` every 15 seconds
@@ -182,6 +189,8 @@ ClaudeUsage/
     ├── UsageParser.swift      # ANSI stripping, % and reset parsing
     ├── UsageData.swift        # UsageSnapshot data model
     ├── CostScanner.swift      # JSONL log scanning, per-model pricing
+    ├── DesktopWidget.swift    # Floating widget window (NSWindow + frosted glass)
+    ├── WidgetViews.swift      # Small & Medium widget SwiftUI views
     └── Settings.swift         # UserDefaults, SMAppService
 ```
 

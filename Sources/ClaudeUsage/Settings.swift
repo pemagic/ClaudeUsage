@@ -11,6 +11,11 @@ final class Settings: ObservableObject {
     @Published var idleThresholdMinutes: Int {
         didSet { UserDefaults.standard.set(idleThresholdMinutes, forKey: "idleThresholdMinutes") }
     }
+    /// 0 = off, 1 = small, 2 = medium
+    @Published var widgetMode: Int {
+        didSet { UserDefaults.standard.set(widgetMode, forKey: "widgetMode") }
+    }
+
     @Published var launchAtLogin: Bool {
         didSet {
             UserDefaults.standard.set(launchAtLogin, forKey: "launchAtLogin")
@@ -41,6 +46,7 @@ final class Settings: ObservableObject {
         showRemaining = UserDefaults.standard.object(forKey: "showRemaining") as? Bool ?? true
         refreshInterval = UserDefaults.standard.object(forKey: "refreshInterval") as? Int ?? 5
         idleThresholdMinutes = UserDefaults.standard.object(forKey: "idleThresholdMinutes") as? Int ?? 30
+        widgetMode = UserDefaults.standard.object(forKey: "widgetMode") as? Int ?? 0
         launchAtLogin = UserDefaults.standard.object(forKey: "launchAtLogin") as? Bool ?? false
     }
 }
