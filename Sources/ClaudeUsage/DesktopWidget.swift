@@ -26,7 +26,7 @@ final class DesktopWidgetWindow: NSWindow {
         backgroundColor = .clear
         hasShadow = true
         animationBehavior = .none
-        level = .init(rawValue: NSWindow.Level.statusBar.rawValue - 1)
+        level = .init(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)))
         collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary]
         isMovableByWindowBackground = true
         titlebarAppearsTransparent = true
