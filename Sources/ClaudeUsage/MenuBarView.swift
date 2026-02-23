@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 // MARK: - Pace helpers
@@ -309,7 +310,7 @@ struct MenuBarView: View {
     }
 
     func footerRow(_ label: String, icon: String?, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        HoverButton(action: action) {
             HStack(spacing: 7) {
                 if let icon {
                     Image(systemName: icon).frame(width: 16).foregroundStyle(.secondary)
@@ -317,12 +318,44 @@ struct MenuBarView: View {
                 Text(label)
                 Spacer()
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 9)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 9)
     }
+}
+
+// MARK: - Hover Button (highlight + haptic)
+
+struct HoverButton<Content: View>: View {
+    let action: () -> Void
+    @ViewBuilder let content: () -> Content
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            content()
+        }
+        .buttonStyle(.plain)
+        .background(isHovered ? Color.primary.opacity(0.08) : Color.clear)
+        .onHover { hovering in
+            if hovering && !isHovered {
+                NSHapticFeedbackManager.defaultPerformer.perform(
+                    .alignment, performanceTime: .now)
+                NSSound.tink?.play()
+            }
+            isHovered = hovering
+        }
+    }
+}
+
+private extension NSSound {
+    /// Short, subtle system sound for hover feedback
+    static let tink: NSSound? = {
+        let s = NSSound(named: "Tink")
+        s?.volume = 0.15
+        return s
+    }()
 }
 
 // MARK: - Settings Panel
