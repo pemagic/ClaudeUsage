@@ -71,8 +71,8 @@ final class UsageStore: ObservableObject {
             var snap: UsageSnapshot?
             var err: String?
             do {
-                let raw = try await self.fetcher.fetch()
-                snap = UsageParser.parse(raw)
+                let fetchResult = try await self.fetcher.fetch()
+                snap = UsageParser.parse(fetchResult)
             } catch {
                 err = error.localizedDescription
             }

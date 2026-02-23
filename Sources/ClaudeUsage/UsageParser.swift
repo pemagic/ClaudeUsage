@@ -162,10 +162,26 @@ enum UsageParser {
         return "\(num)\(unit)"
     }
 
+    // MARK: - Plan info from welcome screen
+
+    /// Parse "Opus 4.6 · Claude Max" from the welcome screen.
+    static func parsePlanInfo(_ welcomeRaw: String) -> (model: String?, plan: String?) {
+        let clean = stripANSI(welcomeRaw)
+        // Pattern: "ModelName · PlanName" e.g. "Opus 4.6 · Claude Max"
+        let pattern = #"((?:Opus|Sonnet|Haiku)\s+[\d.]+)\s*[·•]\s*(Claude\s+\w+)"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: clean, range: NSRange(clean.startIndex..., in: clean)) else {
+            return (nil, nil)
+        }
+        let model = Range(match.range(at: 1), in: clean).map { String(clean[$0]).trimmingCharacters(in: .whitespaces) }
+        let plan = Range(match.range(at: 2), in: clean).map { String(clean[$0]).trimmingCharacters(in: .whitespaces) }
+        return (model, plan)
+    }
+
     // MARK: - Main parse
 
-    static func parse(_ rawText: String) -> UsageSnapshot {
-        let clean = stripANSI(rawText)
+    static func parse(_ result: FetchResult) -> UsageSnapshot {
+        let clean = stripANSI(result.usageText)
         let normalized = clean.replacingOccurrences(of: "\r\n", with: "\n")
                                .replacingOccurrences(of: "\r", with: "\n")
         let lines = normalized.components(separatedBy: "\n")
@@ -270,6 +286,8 @@ enum UsageParser {
             }
         }
 
+        let planInfo = parsePlanInfo(result.welcomeText)
+
         return UsageSnapshot(
             fiveHourAll: fiveHourAll,
             fiveHourOpus: fiveHourOpus,
@@ -283,6 +301,8 @@ enum UsageParser {
             todayTokens: todayTokens,
             monthlyCost: monthlyCost,
             monthlyTokens: monthlyTokens,
+            modelName: planInfo.model,
+            planName: planInfo.plan,
             fetchedAt: Date(),
             rawText: clean
         )

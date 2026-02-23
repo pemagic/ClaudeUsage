@@ -77,20 +77,22 @@ struct MenuBarView: View {
     var headerSection: some View {
         HStack(alignment: .top, spacing: 0) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Claude")
+                Text(store.snapshot?.modelName ?? "Claude")
                     .font(.system(size: 17, weight: .bold))
                 Text(headerSubtitle)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Text("Max")
-                .font(.system(size: 11, weight: .semibold))
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(accent.opacity(0.18))
-                .foregroundStyle(accent)
-                .clipShape(RoundedRectangle(cornerRadius: 5))
+            if let badge = store.snapshot?.planName?.replacingOccurrences(of: "Claude ", with: "") {
+                Text(badge)
+                    .font(.system(size: 11, weight: .semibold))
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3)
+                    .background(accent.opacity(0.18))
+                    .foregroundStyle(accent)
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+            }
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)

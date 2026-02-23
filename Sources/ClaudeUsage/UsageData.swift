@@ -19,8 +19,18 @@ struct UsageSnapshot {
     let monthlyCost: String?
     let monthlyTokens: String?
 
+    // Plan info from welcome screen (e.g. "Opus 4.6 · Claude Max")
+    let modelName: String?       // e.g. "Opus 4.6"
+    let planName: String?        // e.g. "Claude Max"
+
     let fetchedAt: Date
     let rawText: String   // kept for debugging
 
     var isValid: Bool { fiveHourAll != nil || weeklyAll != nil }
+}
+
+/// Raw output from the CLI containing both welcome screen and /usage data.
+struct FetchResult {
+    let welcomeText: String
+    let usageText: String
 }

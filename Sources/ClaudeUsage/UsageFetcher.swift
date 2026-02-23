@@ -46,7 +46,7 @@ actor UsageFetcher {
         return nil
     }
 
-    func fetch() async throws -> String {
+    func fetch() async throws -> FetchResult {
         guard let claude = Self.findClaude() else {
             throw FetchError.claudeNotFound
         }
@@ -89,19 +89,21 @@ actor UsageFetcher {
         }
 
         // Wait for the CLI welcome screen to finish rendering.
-        // Instead of a fixed delay, wait until output goes quiet for 600ms (max 10s).
+        // Capture welcome text — it contains plan/model info (e.g. "Opus 4.6 · Claude Max").
+        var welcomeData = Data()
         let readyDeadline = Date().addingTimeInterval(10)
         var lastActivity = Date()
         while Date() < readyDeadline {
             let chunk = drainFD(primaryFD)
             if !chunk.isEmpty {
+                welcomeData.append(chunk)
                 lastActivity = Date()
             } else if Date().timeIntervalSince(lastActivity) >= 0.6 {
                 break  // CLI quiet for 600ms → ready
             }
             try await Task.sleep(nanoseconds: 100_000_000)
         }
-        _ = drainFD(primaryFD)  // final drain
+        welcomeData.append(drainFD(primaryFD))  // final drain
 
         write(primaryFD, "/usage\r", 7)
 
@@ -161,7 +163,9 @@ actor UsageFetcher {
 
         guard found else { throw FetchError.timeout }
         guard !buffer.isEmpty else { throw FetchError.outputEmpty }
-        return String(data: buffer, encoding: .utf8) ?? ""
+        let welcome = String(decoding: welcomeData, as: UTF8.self)
+        let usage = String(data: buffer, encoding: .utf8) ?? ""
+        return FetchResult(welcomeText: welcome, usageText: usage)
     }
 
     private func drainFD(_ fd: Int32) -> Data {
