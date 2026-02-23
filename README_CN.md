@@ -13,8 +13,11 @@
   <a href="README.md">🇺🇸 English</a>
 </p>
 
-<!-- 替换为实际截图: -->
-<!-- <p align="center"><img src="assets/screenshot-popup.png" width="320" /></p> -->
+<p align="center">
+  <img src="assets/screenshot-menubar.svg" width="320" alt="ClaudeUsage 弹出面板" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="assets/screenshot-idle.svg" width="320" alt="ClaudeUsage 空闲状态" />
+</p>
 
 ## 为什么做 ClaudeUsage？
 

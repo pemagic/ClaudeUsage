@@ -13,8 +13,11 @@
   <a href="README_CN.md">🇨🇳 中文文档</a>
 </p>
 
-<!-- Replace with actual screenshot: -->
-<!-- <p align="center"><img src="assets/screenshot-popup.png" width="320" /></p> -->
+<p align="center">
+  <img src="assets/screenshot-menubar.svg" width="320" alt="ClaudeUsage popup" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="assets/screenshot-idle.svg" width="320" alt="ClaudeUsage idle state" />
+</p>
 
 ## Why ClaudeUsage?
 
