@@ -1,5 +1,7 @@
 .build/
 *.app
+*.dmg
+dmg_stage/
 .DS_Store
 AppIcon.iconset/
 docs/plans/
