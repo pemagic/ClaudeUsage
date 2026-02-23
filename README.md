@@ -33,7 +33,7 @@ Grab the latest `ClaudeUsage.app.zip` from [Releases](../../releases).
 Requires **macOS 13+** and **Swift 5.9+** (Xcode 15 or swiftly/swift toolchain).
 
 ```bash
-git clone https://github.com/user/ClaudeUsage.git
+git clone https://github.com/pemagic/ClaudeUsage.git
 cd ClaudeUsage
 bash build.sh
 cp -r ClaudeUsage.app /Applications/
@@ -89,7 +89,7 @@ ClaudeUsage 通过 PTY 启动 `claude --allowed-tools ""`，发送 `/usage` 命�
 需要 **macOS 13+** 和 **Swift 5.9+**（Xcode 15 或 swiftly/swift 工具链）。
 
 ```bash
-git clone https://github.com/user/ClaudeUsage.git
+git clone https://github.com/pemagic/ClaudeUsage.git
 cd ClaudeUsage
 bash build.sh
 cp -r ClaudeUsage.app /Applications/
