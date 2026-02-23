@@ -51,11 +51,14 @@ struct MenuBarView: View {
     private let panelWidth: CGFloat = 295
 
     var body: some View {
-        Group {
-            if showSettings {
-                SettingsPanelView(showSettings: $showSettings)
-            } else {
-                mainView
+        // TimelineView forces re-render every 30s so countdowns tick down
+        TimelineView(.periodic(from: .now, by: 30)) { _ in
+            Group {
+                if showSettings {
+                    SettingsPanelView(showSettings: $showSettings)
+                } else {
+                    mainView
+                }
             }
         }
         .frame(width: panelWidth)
@@ -169,7 +172,8 @@ struct MenuBarView: View {
         }
         let countdownStr: String? = resetDate.flatMap { d -> String? in
             let secs = d.timeIntervalSinceNow
-            guard secs > 0 else { return nil }
+            if secs <= 0 { return "Resetting..." }
+            if secs < 60 { return "<1m" }
             return formatDuration(secs)
         }
 
@@ -204,7 +208,7 @@ struct MenuBarView: View {
                 }
                 Spacer()
                 if let c = countdownStr {
-                    Text("Resets in \(c)")
+                    Text(c == "Resetting..." ? c : "Resets in \(c)")
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
