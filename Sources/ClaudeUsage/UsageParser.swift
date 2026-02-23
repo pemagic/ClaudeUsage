@@ -59,10 +59,13 @@ enum UsageParser {
         // Relative format: "6d 11h", "2h 42m", "1m", etc.
         var totalSeconds: TimeInterval = 0
         var matched = false
+        // Strict: no space between number and unit.
+        // CLI outputs "4h30m" not "4 h 30 m". Allowing \s* caused false
+        // positives when ANSI stripping garbles "6am" → "6 m" (matched as 6 min).
         let pairs: [(String, TimeInterval)] = [
-            (#"(\d+)\s*d"#, 86400),
-            (#"(\d+)\s*h"#, 3600),
-            (#"(\d+)\s*m(?:in|s)?"#, 60),
+            (#"(\d+)d"#, 86400),
+            (#"(\d+)h"#, 3600),
+            (#"(\d+)m(?:in|s)?"#, 60),
         ]
         for (pattern, multiplier) in pairs {
             if let regex = try? NSRegularExpression(pattern: pattern),
@@ -125,6 +128,32 @@ enum UsageParser {
                     }
                 }
             }
+        }
+
+        // Garbled time fallback: ANSI stripping turns "6am" → "6 m" (cursor-right
+        // replaces 'a' with space). Match a lone digit + whitespace + "m" and treat
+        // the digit as an hour. Try both AM and PM, pick the nearest future time.
+        let garbledPattern = #"(\d{1,2})\s+m\b"#
+        if let rx = try? NSRegularExpression(pattern: garbledPattern, options: .caseInsensitive),
+           let m = rx.firstMatch(in: s, range: NSRange(s.startIndex..., in: s)),
+           let r = Range(m.range(at: 1), in: s),
+           let hour = Int(s[r]), hour >= 1, hour <= 12 {
+            let now = Date()
+            var best: Date?
+            // Try AM (hour as-is) and PM (hour + 12), pick nearest future
+            for h in [hour, hour == 12 ? 0 : hour + 12] {
+                var comps = cal.dateComponents([.year, .month, .day], from: now)
+                comps.hour = h
+                comps.minute = 0
+                comps.second = 0
+                if var d = cal.date(from: comps) {
+                    if d < now { d = d.addingTimeInterval(86400) }
+                    if best == nil || d.timeIntervalSince(now) < best!.timeIntervalSince(now) {
+                        best = d
+                    }
+                }
+            }
+            if let d = best { return d }
         }
 
         return nil
