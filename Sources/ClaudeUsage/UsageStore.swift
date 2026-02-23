@@ -2,6 +2,19 @@ import Foundation
 import IOKit
 import SwiftUI
 
+// MARK: - Check if any claude process is running
+
+private func isClaudeRunning() -> Bool {
+    let proc = Process()
+    proc.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+    proc.arguments = ["-x", "claude"]
+    proc.standardOutput = Pipe()
+    proc.standardError = Pipe()
+    try? proc.run()
+    proc.waitUntilExit()
+    return proc.terminationStatus == 0
+}
+
 // MARK: - Idle time via IOKit (no permissions required)
 
 private func systemIdleSeconds() -> TimeInterval {
@@ -153,12 +166,13 @@ final class UsageStore: ObservableObject {
 
         let thresholdSecs = Double(thresholdMinutes) * 60
         let idle = systemIdleSeconds()
+        let claudeRunning = isClaudeRunning()
 
-        if idle >= thresholdSecs && !isIdle {
-            // Transition: active → idle
+        if (!claudeRunning || idle >= thresholdSecs) && !isIdle {
+            // Transition: active → idle (user idle OR claude not running)
             isIdle = true
-        } else if idle < thresholdSecs && isIdle {
-            // Transition: idle → active (user returned)
+        } else if claudeRunning && idle < thresholdSecs && isIdle {
+            // Transition: idle → active (user returned AND claude is running)
             isIdle = false
             // Immediate refresh on return
             Task { await refresh() }
