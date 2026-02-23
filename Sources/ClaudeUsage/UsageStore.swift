@@ -76,6 +76,8 @@ final class UsageStore: ObservableObject {
     func scheduleRefreshTimer() {
         refreshTimer?.invalidate()
         idleWatchTimer?.invalidate()
+        idleWatchTimer = nil   // ensure clean state
+        isIdle = false         // always reset idle flag when rescheduling
 
         let interval = Double(settings.refreshInterval) * 60
         refreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
