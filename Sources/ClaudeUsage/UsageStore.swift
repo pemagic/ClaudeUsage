@@ -2,9 +2,13 @@ import Foundation
 import IOKit
 import SwiftUI
 
-// MARK: - Check if any claude process is running
+// MARK: - Check if user is actively using Claude Code
 
-private func isClaudeRunning() -> Bool {
+/// Returns true only when a claude process exists AND user project logs show
+/// recent activity.  This avoids false positives from the short-lived claude
+/// process that UsageFetcher spawns (which writes to /tmp, not ~/.claude).
+private func isClaudeActive() -> Bool {
+    // Condition 1: at least one claude process is alive
     let proc = Process()
     proc.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
     proc.arguments = ["-x", "claude"]
@@ -12,7 +16,36 @@ private func isClaudeRunning() -> Bool {
     proc.standardError = Pipe()
     try? proc.run()
     proc.waitUntilExit()
-    return proc.terminationStatus == 0
+    guard proc.terminationStatus == 0 else { return false }
+
+    // Condition 2: user project logs have been touched recently
+    return hasRecentClaudeLogs(withinSeconds: 300)  // 5 minutes
+}
+
+/// Scans ~/.claude/projects/ for any file modified within `withinSeconds`.
+private func hasRecentClaudeLogs(withinSeconds threshold: TimeInterval) -> Bool {
+    let home = FileManager.default.homeDirectoryForCurrentUser.path
+    let projectsDir = "\(home)/.claude/projects"
+    let fm = FileManager.default
+
+    guard let enumerator = fm.enumerator(
+        at: URL(fileURLWithPath: projectsDir),
+        includingPropertiesForKeys: [.contentModificationDateKey],
+        options: [.skipsHiddenFiles, .skipsPackageDescendants]
+    ) else { return false }
+
+    let cutoff = Date().addingTimeInterval(-threshold)
+
+    while let url = enumerator.nextObject() as? URL {
+        // Only check JSONL files for efficiency
+        guard url.pathExtension == "jsonl" else { continue }
+        if let values = try? url.resourceValues(forKeys: [.contentModificationDateKey]),
+           let modified = values.contentModificationDate,
+           modified > cutoff {
+            return true
+        }
+    }
+    return false
 }
 
 // MARK: - Idle time via IOKit (no permissions required)
@@ -169,7 +202,7 @@ final class UsageStore: ObservableObject {
 
         let thresholdSecs = Double(thresholdMinutes) * 60
         let idle = systemIdleSeconds()
-        let claudeRunning = isClaudeRunning()
+        let claudeRunning = isClaudeActive()
 
         // Track how long Claude has been gone
         if claudeRunning {
