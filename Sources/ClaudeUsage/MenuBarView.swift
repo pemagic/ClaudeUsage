@@ -307,9 +307,35 @@ struct MenuBarView: View {
             Divider()
             footerRow("Settings...", icon: "gear") { showSettings = true }
             Divider()
+            aboutSection
+            Divider()
             footerRow("Quit ClaudeUsage", icon: nil) {
                 NSApplication.shared.terminate(nil)
             }
+        }
+    }
+
+    // MARK: - About (silkscreen style)
+
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "–"
+    }
+
+    var aboutSection: some View {
+        HoverButton(action: {
+            NSWorkspace.shared.open(URL(string: "https://github.com/pemagic/ClaudeUsage")!)
+        }) {
+            VStack(spacing: 3) {
+                Text("ClaudeUsage v\(appVersion)")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(.quaternary)
+                Text("github.com/pemagic/ClaudeUsage")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.quaternary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
         }
     }
 
