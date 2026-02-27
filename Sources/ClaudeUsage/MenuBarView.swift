@@ -104,6 +104,9 @@ struct MenuBarView: View {
     }
 
     private var headerSubtitle: String {
+        if store.isIdle, let snap = store.snapshot {
+            return "💤 Sleeping · \(timeAgo(snap.fetchedAt))"
+        }
         if let snap = store.snapshot { return "Updated \(timeAgo(snap.fetchedAt))" }
         if store.isLoading { return "Updating..." }
         return "Not updated"
@@ -120,7 +123,10 @@ struct MenuBarView: View {
 
     @ViewBuilder
     var contentSection: some View {
-        if store.isIdle {
+        if store.isIdle, let snap = store.snapshot {
+            idleBanner
+            usageContent(snap: snap)
+        } else if store.isIdle {
             idleView
         } else if let snap = store.snapshot {
             usageContent(snap: snap)
@@ -138,25 +144,21 @@ struct MenuBarView: View {
                    resetDate: snap.fiveHourResetsDate,
                    pace: nil)
 
-        if snap.weeklyAll != nil {
-            Divider()
-            let pace: PaceInfo? = {
-                guard let u = snap.weeklyAll, let d = snap.weeklyResetsDate else { return nil }
-                return calcWeeklyPace(usage: u, resetDate: d)
-            }()
-            usageBlock(title: "Weekly",
-                       value: snap.weeklyAll,
-                       resetDate: snap.weeklyResetsDate,
-                       pace: pace)
-        }
+        Divider()
+        let pace: PaceInfo? = {
+            guard let u = snap.weeklyAll, let d = snap.weeklyResetsDate else { return nil }
+            return calcWeeklyPace(usage: u, resetDate: d)
+        }()
+        usageBlock(title: "Weekly",
+                   value: snap.weeklyAll ?? 0.0,
+                   resetDate: snap.weeklyResetsDate,
+                   pace: pace)
 
-        if let sonnet = snap.weeklyOpus ?? snap.fiveHourOpus {
-            Divider()
-            usageBlock(title: "Sonnet",
-                       value: sonnet,
-                       resetDate: snap.weeklyResetsDate ?? snap.fiveHourResetsDate,
-                       pace: nil)
-        }
+        Divider()
+        usageBlock(title: "Sonnet",
+                   value: (snap.weeklyOpus ?? snap.fiveHourOpus) ?? 0.0,
+                   resetDate: snap.weeklyResetsDate ?? snap.fiveHourResetsDate,
+                   pace: nil)
 
         Divider()
         costSection()
@@ -273,10 +275,23 @@ struct MenuBarView: View {
 
     // MARK: - State views
 
+    var idleBanner: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "moon.zzz.fill")
+                .font(.system(size: 10))
+            Text("Sleeping · Cached Data")
+                .font(.system(size: 11, weight: .medium))
+        }
+        .foregroundStyle(accent.opacity(0.8))
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+        .background(accent.opacity(0.06))
+    }
+
     var idleView: some View {
         HStack(spacing: 8) {
-            Image(systemName: "moon.zzz").foregroundStyle(.secondary)
-            Text("Paused (\(settings.idleThresholdMinutes)m idle)")
+            Image(systemName: "moon.zzz.fill").foregroundStyle(.secondary)
+            Text("Sleeping")
                 .font(.system(size: 13)).foregroundStyle(.secondary)
         }
         .padding(.horizontal, 16).padding(.vertical, 18)

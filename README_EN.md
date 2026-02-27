@@ -21,7 +21,7 @@
 
 ## Why ClaudeUsage?
 
-Claude Max plan has session (5-hour) and weekly (7-day) usage limits, but there's no easy way to check how much you've consumed without opening the CLI and running `/usage`. ClaudeUsage sits quietly in your menu bar and shows the percentage at a glance — plus pace predictions, reset countdowns, and cost tracking.
+Claude Code paid subscriptions (Pro, Team, Max, Enterprise) have session (5-hour) and weekly (7-day) usage limits, but there's no easy way to check how much you've consumed without opening the CLI and running `/usage`. ClaudeUsage sits quietly in your menu bar and shows the percentage at a glance — plus pace predictions, reset countdowns, and cost tracking.
 
 ## Inspired by CodexBar
 
@@ -62,14 +62,13 @@ This project was inspired by [CodexBar](https://github.com/steipete/CodexBar) �
 
 ### Desktop Widget
 - **Floating widget** — a frosted-glass widget that sits on your desktop, always visible across all Spaces
-- **Two sizes** — Small (compact 180×190 block) or Medium (320×140 with full details)
-- **Fresh color palette** — ocean blue (session), coral pink (weekly), mint green (cost), warm purple (branding)
+- **Two sizes** — Small (compact 180×190 block) or Medium (340×160 with full details)
 - **Draggable** — drag to any position, remembered across launches
 - **Zero overhead** — shares the same data store as the menu bar; no extra polling or IPC
 
 ### Smart Idle Detection
 - Polls system idle time via IOKit `HIDIdleTime` every 15 seconds
-- When idle threshold is reached, pauses all polling and shows ⏸ in menu bar
+- When idle threshold is reached, pauses all polling and shows ⏸ in menu bar, while the popup and widget display cached data with a sleep indicator
 - Automatically resumes with immediate refresh when you return
 - Configurable: 1 min, 5 min, 10 min, 30 min, 1 hour, or never
 
@@ -215,7 +214,7 @@ Prices aligned with Anthropic's published API pricing (Feb 2025).
 
 - macOS 13 Ventura or later
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated
-- Claude **Max** plan (usage data is only available on Max)
+- A Claude Code paid subscription with usage limits (Pro, Team, Max, Enterprise, etc.)
 
 ## License
 

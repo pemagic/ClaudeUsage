@@ -47,20 +47,16 @@ struct SmallWidgetView: View {
             }
             .padding(.bottom, 10)
 
-            if store.isIdle {
-                Spacer()
-                HStack {
-                    Spacer()
-                    VStack(spacing: 4) {
-                        Text("⏸").font(.system(size: 24))
-                        Text("Paused")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
+            if let snap = store.snapshot {
+                if store.isIdle {
+                    HStack(spacing: 3) {
+                        Image(systemName: "moon.zzz.fill").font(.system(size: 8))
+                        Text("Sleeping · Cached").font(.system(size: 9, weight: .medium))
                     }
-                    Spacer()
+                    .foregroundStyle(.tertiary)
+                    .padding(.bottom, 6)
                 }
-                Spacer()
-            } else if let snap = store.snapshot {
+
                 smallUsageBlock(
                     label: "Session",
                     value: snap.fiveHourAll,
@@ -88,6 +84,19 @@ struct SmallWidgetView: View {
                     }
                     .foregroundStyle(.secondary)
                 }
+            } else if store.isIdle {
+                Spacer()
+                HStack {
+                    Spacer()
+                    VStack(spacing: 4) {
+                        Image(systemName: "moon.zzz.fill").font(.system(size: 20))
+                        Text("Sleeping")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                Spacer()
             } else {
                 Spacer()
                 HStack {
@@ -184,20 +193,16 @@ struct MediumWidgetView: View {
             }
             .padding(.bottom, 10)
 
-            if store.isIdle {
-                Spacer()
-                HStack {
-                    Spacer()
-                    HStack(spacing: 8) {
-                        Text("⏸").font(.system(size: 20))
-                        Text("Paused (\(settings.idleThresholdMinutes)m idle)")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.secondary)
+            if let snap = store.snapshot {
+                if store.isIdle {
+                    HStack(spacing: 4) {
+                        Image(systemName: "moon.zzz.fill").font(.system(size: 9))
+                        Text("Sleeping · Showing cached data").font(.system(size: 10, weight: .medium))
                     }
-                    Spacer()
+                    .foregroundStyle(.tertiary)
+                    .padding(.bottom, 6)
                 }
-                Spacer()
-            } else if let snap = store.snapshot {
+
                 // Two columns: Session | Weekly
                 HStack(alignment: .top, spacing: 16) {
                     mediumUsageBlock(
@@ -229,6 +234,19 @@ struct MediumWidgetView: View {
                     }
                     .foregroundStyle(.secondary)
                 }
+            } else if store.isIdle {
+                Spacer()
+                HStack {
+                    Spacer()
+                    HStack(spacing: 8) {
+                        Image(systemName: "moon.zzz.fill").font(.system(size: 16))
+                        Text("Sleeping")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                Spacer()
             } else {
                 Spacer()
                 HStack {
