@@ -39,6 +39,8 @@ private func hasRecentClaudeLogs(withinSeconds threshold: TimeInterval) -> Bool 
     while let url = enumerator.nextObject() as? URL {
         // Only check JSONL files for efficiency
         guard url.pathExtension == "jsonl" else { continue }
+        // Exclude logs created by our own fetcher (runs under /tmp/claudeusage-probe)
+        guard !url.path.contains("-tmp-claudeusage-probe") else { continue }
         if let values = try? url.resourceValues(forKeys: [.contentModificationDateKey]),
            let modified = values.contentModificationDate,
            modified > cutoff {
