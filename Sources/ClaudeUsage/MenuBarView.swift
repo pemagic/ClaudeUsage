@@ -230,7 +230,7 @@ struct MenuBarView: View {
     }
 
     private func paceText(_ p: PaceInfo) -> String {
-        let sign = p.ahead ? "+" : "−"
+        let sign = p.ahead ? "+" : ""
         let base = "Pace: \(p.ahead ? "Ahead" : "Behind") (\(sign)\(p.percentDiff)%)"
         if let t = p.runsOutIn {
             return base + " · Runs out in \(formatDuration(t))"

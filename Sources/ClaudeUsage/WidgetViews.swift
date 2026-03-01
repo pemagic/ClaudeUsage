@@ -327,7 +327,7 @@ struct MediumWidgetView: View {
         let expectedByNow = elapsed / total
         let ahead = usage > expectedByNow
         let pctDiff = Int((abs(usage - expectedByNow) * 100).rounded())
-        let sign = ahead ? "+" : "−"
+        let sign = ahead ? "+" : ""
 
         return "\(ahead ? "Ahead" : "Behind") (\(sign)\(pctDiff)%)"
     }
